@@ -42,6 +42,7 @@ class HwDLL : public IHookableNameFilterOrdered
 	HOOK_DECL(void, __cdecl, Cmd_Exec_f)
 	HOOK_DECL(void, __cdecl, R_DrawSequentialPoly, msurface_t *surf, int face)
 	HOOK_DECL(void, __cdecl, R_Clear)
+	HOOK_DECL(void, __cdecl, R_DrawViewModel)
 	HOOK_DECL(byte *, __cdecl, Mod_LeafPVS, mleaf_t *leaf, model_t *model)
 	HOOK_DECL(void, __cdecl, SV_AddLinksToPM_, void *node, float *pmove_mins, float *pmove_maxs)
 	HOOK_DECL(void, __cdecl, SV_WriteEntitiesToClient, client_t* client, void* msg)
@@ -267,6 +268,8 @@ public:
 	bool free_cam_active;
 	void SetFreeCam(bool enabled);
 	void FreeCamTick();
+
+	float currentRenderFOV = 0;
 
 private:
 	// Make sure to have hl.exe last here, so that it is the lowest priority.

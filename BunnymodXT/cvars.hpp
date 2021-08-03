@@ -126,6 +126,7 @@ namespace CVars
 	extern CVarWrapper bxt_tas_norefresh_until_last_frames;
 	extern CVarWrapper bxt_tas_write_log;
 	extern CVarWrapper bxt_tas_playback_speed;
+	extern CVarWrapper bxt_viewmodel_fov;
 
 	extern CVarWrapper con_color;
 	extern CVarWrapper sv_cheats;

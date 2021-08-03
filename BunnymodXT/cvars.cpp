@@ -19,6 +19,7 @@ namespace CVars
 	CVarWrapper bxt_tas_norefresh_until_last_frames("bxt_tas_norefresh_until_last_frames", "0");
 	CVarWrapper bxt_tas_write_log("bxt_tas_write_log", "0");
 	CVarWrapper bxt_tas_playback_speed("bxt_tas_playback_speed", "1");
+	CVarWrapper bxt_viewmodel_fov("bxt_viewmodel_fov", "0");
 
 	CVarWrapper con_color;
 	CVarWrapper sv_cheats;
@@ -128,6 +129,7 @@ namespace CVars
 		&bxt_tas_norefresh_until_last_frames,
 		&bxt_tas_write_log,
 		&bxt_tas_playback_speed,
+		&bxt_viewmodel_fov,
 		&con_color,
 		&sv_cheats,
 		&sv_maxvelocity,

@@ -797,6 +797,8 @@ HOOK_DEF_2(ClientDLL, int, __cdecl, HUD_UpdateClientData, client_data_t*, pcldat
 	const auto norefresh = CVars::_bxt_norefresh.GetBool();
 	int (*ORIG_GetScreenInfo)(SCREENINFO *pscrinfo) = nullptr;
 
+	HwDLL::GetInstance().currentRenderFOV = pcldata->fov;
+
 	if (norefresh && pEngfuncs) {
 		ORIG_GetScreenInfo = pEngfuncs->pfnGetScreenInfo;
 		pEngfuncs->pfnGetScreenInfo = [](SCREENINFO *pscrinfo) { return 0; };
