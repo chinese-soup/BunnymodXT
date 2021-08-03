@@ -318,6 +318,13 @@ namespace patterns
 			"A1 ?? ?? ?? ?? 53 55 BD 01 00 00 00 8B 88 F8 02 00 00 56 3B CD 57 75 62 E8 ?? ?? ?? ?? 68 03 03 00 00 68 02 03 00 00"
 		);
 
+		PATTERNS(R_DrawViewModel,
+			"HL-SteamPipe",
+			"55 8B EC 83 EC 50 D9 05 ?? ?? ?? ?? D8 1D ?? ?? ?? ?? 56 57 33 FF C7 45",
+			"HL-4554",
+			"83 EC ?? D9 05 ?? ?? ?? ?? D8 1D ?? ?? ?? ?? 56 57 33 FF C7 44"
+		);
+
 		PATTERNS(R_Clear,
 			"HL-SteamPipe",
 			"8B 15 ?? ?? ?? ?? 33 C0 83 FA 01 0F 9F C0 50 E8 ?? ?? ?? ?? D9 05 ?? ?? ?? ?? DC 1D ?? ?? ?? ?? 83 C4 04 DF E0",
@@ -348,6 +355,13 @@ namespace patterns
 			"B8 24 54 01 00 E8 ?? ?? ?? ?? 53 55 56 8B 35 ?? ?? ?? ?? 57 8B BC 24 38 54 01 00",
 			"HL-NGHL",
 			"B8 28 54 01 00 E8 ?? ?? ?? ?? 8B 0D ?? ?? ?? ?? 53 8B 9C 24 30 54 01 00"
+		);
+
+		PATTERNS(studioapi_GetCurrentEntity,
+			"HL-SteamPipe",
+			"A1 ?? ?? ?? ?? C3 90 90 90 90 90 90 90 90 90 90 55 8B EC 8B 45 08 85 C0 7C 18",
+			"HL-4554",
+			"A1 ?? ?? ?? ?? C3 90 90 90 90 90 90 90 90 90 90 8B 44 24 04 85 C0 7C 17"
 		);
 
 		PATTERNS(R_DrawSkyBox,
@@ -514,6 +528,19 @@ namespace patterns
 		PATTERNS(CChangeLevel__InTransitionVolume,
 			"HL-SteamPipe",
 			"53 55 56 8B 74 24 ?? 57 8B CE 8B 06 FF 50"
+		);
+	}
+
+	namespace client
+	{
+		PATTERNS(VectorTransform,
+			"HL-4554",
+			"8B 44 24 08 8B 4C 24 04 8B 54 24 0C D9 40 04 D8 49 04 D9 40 08 D8 49 08 DE C1 D9 01 D8 08 DE C1 D8 40 0CD9 1A D9 40 10 D8 09 D9 40 14 D8 49 04 DE C1 D9 40 18 D8 49 08 DE C1 D8 40 1C D9 5A 04 D9 40 20 D8 09 D9 40 24 D8 49 04 DE C1 D9 40 28 D8 49 08 DE C1 D8 40 2C D9 5A 08 C3 90 90 90 90 8B 44"
+		);
+
+		PATTERNS(StudioCalcAttachments,
+			"HL-4554",
+			"55 57 8B F9 8B 4F ?? 8B 91"
 		);
 	}
 

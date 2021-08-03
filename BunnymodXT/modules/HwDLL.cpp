@@ -149,6 +149,11 @@ extern "C" void __cdecl R_Clear()
 	HwDLL::HOOKED_R_Clear();
 }
 
+extern "C" void __cdecl R_DrawViewModel()
+{
+	HwDLL::HOOKED_R_DrawViewModel();
+}
+
 extern "C" byte *__cdecl Mod_LeafPVS(mleaf_t *leaf, model_t *model)
 {
 	return HwDLL::HOOKED_Mod_LeafPVS(leaf, model);
@@ -259,6 +264,7 @@ void HwDLL::Hook(const std::wstring& moduleName, void* moduleHandle, void* modul
 			MemUtils::MarkAsExecutable(ORIG_Cmd_Exec_f);
 			MemUtils::MarkAsExecutable(ORIG_R_DrawSequentialPoly);
 			MemUtils::MarkAsExecutable(ORIG_R_Clear);
+			MemUtils::MarkAsExecutable(ORIG_R_DrawViewModel);
 			MemUtils::MarkAsExecutable(ORIG_Mod_LeafPVS);
 			MemUtils::MarkAsExecutable(ORIG_SV_AddLinksToPM_);
 			MemUtils::MarkAsExecutable(ORIG_SV_WriteEntitiesToClient);
@@ -295,12 +301,16 @@ void HwDLL::Hook(const std::wstring& moduleName, void* moduleHandle, void* modul
 			ORIG_Cmd_Exec_f, HOOKED_Cmd_Exec_f,
 			ORIG_R_DrawSequentialPoly, HOOKED_R_DrawSequentialPoly,
 			ORIG_R_Clear, HOOKED_R_Clear,
+			ORIG_R_DrawViewModel, HOOKED_R_DrawViewModel,
 			ORIG_Mod_LeafPVS, HOOKED_Mod_LeafPVS,
 			ORIG_SV_AddLinksToPM_, HOOKED_SV_AddLinksToPM_,
 			ORIG_SV_WriteEntitiesToClient, HOOKED_SV_WriteEntitiesToClient,
 			ORIG_VGuiWrap_Paint, HOOKED_VGuiWrap_Paint,
 			ORIG_DispatchDirectUserMsg, HOOKED_DispatchDirectUserMsg,
-			ORIG_SV_SetMoveVars, HOOKED_SV_SetMoveVars);
+			ORIG_SV_SetMoveVars, HOOKED_SV_SetMoveVars
+			ORIG_SV_WriteEntitiesToClient, HOOKED_SV_WriteEntitiesToClient,
+			ORIG_VectorTransform, HOOKED_VectorTransform);
+		);
 	}
 }
 
@@ -337,8 +347,11 @@ void HwDLL::Unhook()
 			ORIG_Cmd_Exec_f,
 			ORIG_R_DrawSequentialPoly,
 			ORIG_R_Clear,
+			ORIG_R_DrawViewModel,
 			ORIG_Mod_LeafPVS,
 			ORIG_SV_AddLinksToPM_,
+			ORIG_SV_WriteEntitiesToClient,
+			ORIG_VectorTransform,
 			ORIG_SV_WriteEntitiesToClient,
 			ORIG_VGuiWrap_Paint,
 			ORIG_DispatchDirectUserMsg,
@@ -396,12 +409,15 @@ void HwDLL::Clear()
 	ORIG_Cmd_Exec_f = nullptr;
 	ORIG_R_DrawSequentialPoly = nullptr;
 	ORIG_R_Clear = nullptr;
+	ORIG_R_DrawViewModel = nullptr;
 	ORIG_Mod_LeafPVS = nullptr;
 	ORIG_SV_AddLinksToPM_ = nullptr;
 	ORIG_SV_WriteEntitiesToClient = nullptr;
 	ORIG_VGuiWrap_Paint = nullptr;
 	ORIG_DispatchDirectUserMsg = nullptr;
 	ORIG_SV_SetMoveVars = nullptr;
+	ORIG_VectorTransform = nullptr;
+	ORIG_studioapi_GetCurrentEntity = nullptr;
 
 	registeredVarsAndCmds = false;
 	autojump = false;
@@ -651,6 +667,25 @@ void HwDLL::FindStuff()
 			EngineDevWarning("[hw dll] Could not find SV_SetMoveVars.\n");
 
 		if (!cls || !sv || !svs || !svmove || !ppmove || !host_client || !sv_player || !sv_areanodes || !cmd_text || !cmd_alias || !host_frametime || !cvar_vars || !movevars || !ORIG_hudGetViewAngles || !ORIG_SV_AddLinksToPM || !ORIG_SV_SetMoveVars)
+		ORIG_VectorTransform = reinterpret_cast<_VectorTransform>(MemUtils::GetSymbolAddress(m_Handle, "VectorTransform"));
+		if (ORIG_VectorTransform)
+			EngineDevMsg("[hw dll] Found VectorTransform at %p.\n", ORIG_VectorTransform);
+		else
+		{
+			EngineDevWarning("[hw dll] Could not find VectorTransform.\n");
+			EngineWarning("[hw dll] Weapon special effects will be misplaced when using bxt_viewmodel_fov.\n");
+		}
+
+		ORIG_studioapi_GetCurrentEntity = reinterpret_cast<_studioapi_GetCurrentEntity>(MemUtils::GetSymbolAddress(m_Handle, "studioapi_GetCurrentEntity"));
+		if (ORIG_studioapi_GetCurrentEntity)
+			EngineDevMsg("[hw dll] Found studioapi_GetCurrentEntity at %p.\n", ORIG_studioapi_GetCurrentEntity);
+		else
+		{
+			EngineDevWarning("[hw dll] Could not find studioapi_GetCurrentEntity.\n");
+			EngineWarning("[hw dll] Weapon special effects will be misplaced when using bxt_viewmodel_fov.\n");
+		}
+
+		if (!cls || !sv || !svs || !svmove || !ppmove || !host_client || !sv_player || !sv_areanodes || !cmd_text || !cmd_alias || !host_frametime || !cvar_vars || !ORIG_hudGetViewAngles || !ORIG_SV_AddLinksToPM)
 			ORIG_Cbuf_Execute = nullptr;
 
 		#define FIND(f) \
@@ -688,6 +723,7 @@ void HwDLL::FindStuff()
 		FIND(CL_Record_f)
 		FIND(Key_Event)
 		FIND(Cmd_Exec_f)
+		FIND(studioapi_GetCurrentEntity)
 		#undef FIND
 
 		ORIG_Host_FilterTime = reinterpret_cast<_Host_FilterTime>(MemUtils::GetSymbolAddress(m_Handle, "Host_FilterTime"));
@@ -760,6 +796,12 @@ void HwDLL::FindStuff()
 		else
 			EngineDevWarning("[hw dll] Could not find R_Clear.\n");
 
+		ORIG_R_DrawViewModel = reinterpret_cast<_R_DrawViewModel>(MemUtils::GetSymbolAddress(m_Handle, "R_DrawViewModel"));
+		if (ORIG_R_DrawViewModel)
+			EngineDevMsg("[hw dll] Found R_DrawViewModel at %p.\n", ORIG_R_DrawViewModel);
+		else
+			EngineDevWarning("[hw dll] Could not find R_DrawViewModel.\n");
+
 		ORIG_Mod_LeafPVS = reinterpret_cast<_Mod_LeafPVS>(MemUtils::GetSymbolAddress(m_Handle, "Mod_LeafPVS"));
 		if (ORIG_Mod_LeafPVS) {
 			EngineDevMsg("[hw dll] Found Mod_LeafPVS at %p.\n", ORIG_Mod_LeafPVS);
@@ -820,6 +862,7 @@ void HwDLL::FindStuff()
 		DEF_FUTURE(VGuiWrap2_ConPrintf)
 		DEF_FUTURE(R_DrawSequentialPoly)
 		DEF_FUTURE(R_Clear)
+		DEF_FUTURE(R_DrawViewModel)
 		DEF_FUTURE(Mod_LeafPVS)
 		DEF_FUTURE(CL_RecordHUDCommand)
 		DEF_FUTURE(CL_Record_f)
@@ -1383,6 +1426,7 @@ void HwDLL::FindStuff()
 		GET_FUTURE(SCR_UpdateScreen);
 		GET_FUTURE(R_DrawSequentialPoly);
 		GET_FUTURE(R_Clear);
+		GET_FUTURE(R_DrawViewModel);
 		GET_FUTURE(Mod_LeafPVS);
 		GET_FUTURE(PF_GetPhysicsKeyValue);
 		GET_FUTURE(SV_AddLinksToPM_);
@@ -2932,6 +2976,9 @@ void HwDLL::RegisterCVarsAndCommandsIfNeeded()
 	RegisterCVar(CVars::bxt_collision_depth_map_pixel_scale);
 	RegisterCVar(CVars::bxt_collision_depth_map_remove_distance_limit);
 	RegisterCVar(CVars::bxt_force_zmax);
+
+	if (ORIG_R_DrawViewModel)
+		RegisterCVar(CVars::bxt_viewmodel_fov);
 
 	CVars::sv_cheats.Assign(FindCVar("sv_cheats"));
 	CVars::fps_max.Assign(FindCVar("fps_max"));
@@ -4609,6 +4656,33 @@ HOOK_DEF_2(HwDLL, void, __cdecl, R_DrawSequentialPoly, msurface_t *, surf, int, 
 	glDisable(GL_BLEND);
 }
 
+HOOK_DEF_0(HwDLL, void, __cdecl, R_DrawViewModel)
+{
+	// If the current's frame FOV is not default_fov, we are zoomed in, in that case don't override frustum
+	if (NeedViewmodelAdjustments())
+	{
+		auto desired_viewmodel_fov = CVars::bxt_viewmodel_fov.GetFloat();
+
+		glMatrixMode (GL_PROJECTION);
+		glLoadIdentity();
+		GLfloat w, h;
+		GLfloat _near = 3.0f;
+		GLfloat _far = 4096.0f;
+		int ScreenWidth = CustomHud::GetScreenInfo().iWidth;
+		int ScreenHeight = CustomHud::GetScreenInfo().iHeight;
+		float fovY = desired_viewmodel_fov;
+		float aspect = (float)ScreenWidth / (float)ScreenHeight;
+
+		h = tan (fovY / 360 * M_PI) * _near * ((float)ScreenHeight / (float)ScreenWidth);
+		w = h * aspect;
+
+		glFrustum (-w, w, -h, h, _near, _far);
+		glMatrixMode (GL_MODELVIEW);
+	}
+
+	ORIG_R_DrawViewModel();
+}
+
 HOOK_DEF_0(HwDLL, void, __cdecl, R_Clear)
 {
 	// This is needed or everything will look washed out or with unintended
@@ -4682,4 +4756,18 @@ HOOK_DEF_0(HwDLL, void, __cdecl, SV_SetMoveVars)
 			*movevars_zmax = CVars::bxt_force_zmax.GetFloat();
 		}
 	}
+}
+
+/*HOOK_DEF_0(HwDLL, cl_entity_t *, __cdecl, studioapi_GetCurrentEntity)
+{
+	return ORIG_studioapi_GetCurrentEntity();
+}*/
+
+HOOK_DEF_3(HwDLL, void, __cdecl, VectorTransform, const vec3_t, in1, float*, in2, vec3_t, out)
+{
+	/*ORIG_Con_Printf("AHOJ JSEM V STUIDO SET HEADER\n");
+	int viewentity = ORIG_studioapi_GetCurrentEntity();
+	ORIG_Con_Printf("INTEGER %d\n", viewentity);*/
+	ORIG_Con_Printf("AHOJ VectorTransform\n");
+	return ORIG_VectorTransform(in1, in2, out);
 }

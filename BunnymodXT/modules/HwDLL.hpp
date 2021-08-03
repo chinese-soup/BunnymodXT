@@ -5,6 +5,7 @@
 #include "../cvars.hpp"
 #include "taslogger/writer.hpp"
 #include "../input_editor.hpp"
+#include <HLSDK/common/cl_entity.h>
 
 enum class TASEditorMode {
 	DISABLED,
@@ -43,12 +44,16 @@ class HwDLL : public IHookableNameFilterOrdered
 	HOOK_DECL(void, __cdecl, Cmd_Exec_f)
 	HOOK_DECL(void, __cdecl, R_DrawSequentialPoly, msurface_t *surf, int face)
 	HOOK_DECL(void, __cdecl, R_Clear)
+	HOOK_DECL(void, __cdecl, R_DrawViewModel)
 	HOOK_DECL(byte *, __cdecl, Mod_LeafPVS, mleaf_t *leaf, model_t *model)
 	HOOK_DECL(void, __cdecl, SV_AddLinksToPM_, void *node, float *pmove_mins, float *pmove_maxs)
 	HOOK_DECL(void, __cdecl, SV_WriteEntitiesToClient, client_t* client, void* msg)
 	HOOK_DECL(void, __cdecl, VGuiWrap_Paint, int paintAll)
 	HOOK_DECL(int, __cdecl, DispatchDirectUserMsg, char* pszName, int iSize, void* pBuf)
 	HOOK_DECL(void, __cdecl, SV_SetMoveVars)
+	HOOK_DECL(void, __cdecl, VectorTransform, const vec3_t in1, float* in2, vec3_t out)
+	//HOOK_DECL(void, __cdecl, VectorTransform, const vec3_t in1, float in2[3][4], vec3_t out)
+	//HOOK_DECL(cl_entity_t *, __cdecl, studioapi_GetCurrentEntity)
 
 	struct cmdbuf_t
 	{
@@ -146,6 +151,17 @@ public:
 	bool TryGettingAccurateInfo(float origin[3], float velocity[3], float& health);
 	void GetViewangles(float* va);
 	void SetViewangles(float* va);
+
+	inline cl_entity_t* GetCurrentEntityFromStudioAPI()
+	{
+		return ORIG_studioapi_GetCurrentEntity();
+	}
+
+	inline bool NeedViewmodelAdjustments()
+	{
+		auto desired_viewmodel_fov = CVars::bxt_viewmodel_fov.GetFloat();
+		return (desired_viewmodel_fov > 0 && desired_viewmodel_fov < 179 && currentRenderFOV == CVars::default_fov.GetFloat());
+	}
 
 	inline bool GetIsOverridingCamera() const { return isOverridingCamera; }
 	inline void GetCameraOverrideOrigin(float origin[3]) const
@@ -272,6 +288,8 @@ public:
 	void SetFreeCam(bool enabled);
 	void FreeCamTick();
 
+	float currentRenderFOV = 0;
+
 private:
 	// Make sure to have hl.exe last here, so that it is the lowest priority.
 	HwDLL() : IHookableNameFilterOrdered({ L"hw.dll", L"hw.so", L"sw.dll", L"hl.exe" }) {};
@@ -281,6 +299,8 @@ private:
 public:
 	typedef void(__cdecl *_Con_Printf) (const char* fmt, ...);
 	_Con_Printf ORIG_Con_Printf;
+	typedef cl_entity_t*(__cdecl *_studioapi_GetCurrentEntity) ();
+	_studioapi_GetCurrentEntity ORIG_studioapi_GetCurrentEntity;
 
 	HLStrafe::PlayerData GetPlayerData();
 
