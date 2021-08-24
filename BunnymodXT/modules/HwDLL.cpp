@@ -759,7 +759,7 @@ void HwDLL::FindStuff()
 		DEF_FUTURE(VGuiWrap2_ConPrintf)
 		DEF_FUTURE(R_DrawSequentialPoly)
 		DEF_FUTURE(R_Clear)
-		//DEF_FUTURE(R_DrawViewModel)
+		DEF_FUTURE(R_DrawViewModel)
 		DEF_FUTURE(Mod_LeafPVS)
 		DEF_FUTURE(CL_RecordHUDCommand)
 		DEF_FUTURE(CL_Record_f)
@@ -1301,7 +1301,7 @@ void HwDLL::FindStuff()
 		GET_FUTURE(SCR_UpdateScreen);
 		GET_FUTURE(R_DrawSequentialPoly);
 		GET_FUTURE(R_Clear);
-		//GET_FUTURE(R_DrawViewModel);
+		GET_FUTURE(R_DrawViewModel);
 		GET_FUTURE(Mod_LeafPVS);
 		GET_FUTURE(PF_GetPhysicsKeyValue);
 		GET_FUTURE(SV_AddLinksToPM_);
@@ -4517,7 +4517,6 @@ HOOK_DEF_2(HwDLL, void, __cdecl, R_DrawSequentialPoly, msurface_t *, surf, int, 
 	glDepthMask(GL_TRUE);
 	glDisable(GL_BLEND);
 }
-
 
 HOOK_DEF_0(HwDLL, void, __cdecl, R_DrawViewModel)
 {
