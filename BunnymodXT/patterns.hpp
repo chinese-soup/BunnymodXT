@@ -496,6 +496,19 @@ namespace patterns
 		);
 	}
 
+	namespace client
+	{
+		PATTERNS(VectorTransform,
+			"HL-4554",
+			"8B 44 24 ?? 8B 4C 24 ?? 8B 54 24 ?? D9 40 ??"
+		);
+
+		PATTERNS(StudioCalcAttachments,
+			"HL-4554",
+			"55 57 8B F9 8B 4F ?? 8B 91"
+		);
+	}
+
 	namespace shared
 	{
 		PATTERNS(PM_Jump,

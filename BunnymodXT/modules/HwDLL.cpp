@@ -163,6 +163,18 @@ extern "C" void __cdecl SV_WriteEntitiesToClient(client_t* client, void* msg)
 {
 	HwDLL::HOOKED_SV_WriteEntitiesToClient(client, msg);
 }
+
+//extern "C" void __cdecl V_SetRefParams(void *header)
+/*extern "C" void __cdecl VectorTransform(const vec3_t in1, float* in2, vec3_t out)
+{
+	return HwDLL::HOOKED_VectorTransform(in1, in2, out);
+}*/
+
+//extern "C" void __cdecl V_SetRefParams(void *header)
+/*extern "C" int __cdecl studioapi_GetCurrentEntity()
+{
+	return HwDLL::HOOKED_studioapi_GetCurrentEntity();
+}*/
 #endif
 
 void HwDLL::Hook(const std::wstring& moduleName, void* moduleHandle, void* moduleBase, size_t moduleLength, bool needToIntercept)
@@ -279,7 +291,10 @@ void HwDLL::Hook(const std::wstring& moduleName, void* moduleHandle, void* modul
 			ORIG_R_DrawViewModel, HOOKED_R_DrawViewModel,
 			ORIG_Mod_LeafPVS, HOOKED_Mod_LeafPVS,
 			ORIG_SV_AddLinksToPM_, HOOKED_SV_AddLinksToPM_,
-			ORIG_SV_WriteEntitiesToClient, HOOKED_SV_WriteEntitiesToClient);
+			ORIG_SV_WriteEntitiesToClient, HOOKED_SV_WriteEntitiesToClient,
+			ORIG_VectorTransform, HOOKED_VectorTransform
+		//	ORIG_studioapi_GetCurrentEntity, HOOKED_studioapi_GetCurrentEntity
+		);
 	}
 }
 
@@ -318,7 +333,8 @@ void HwDLL::Unhook()
 			ORIG_R_DrawViewModel,
 			ORIG_Mod_LeafPVS,
 			ORIG_SV_AddLinksToPM_,
-			ORIG_SV_WriteEntitiesToClient);
+			ORIG_SV_WriteEntitiesToClient,
+			ORIG_VectorTransform);
 	}
 
 	for (auto cvar : CVars::allCVars)
@@ -375,6 +391,8 @@ void HwDLL::Clear()
 	ORIG_Mod_LeafPVS = nullptr;
 	ORIG_SV_AddLinksToPM_ = nullptr;
 	ORIG_SV_WriteEntitiesToClient = nullptr;
+	ORIG_VectorTransform = nullptr;
+	ORIG_studioapi_GetCurrentEntity = nullptr;
 
 	registeredVarsAndCmds = false;
 	autojump = false;
@@ -607,6 +625,24 @@ void HwDLL::FindStuff()
 			EngineDevMsg("[hw dll] Found SV_WriteEntitiesToClient at %p.\n", ORIG_SV_WriteEntitiesToClient);
 		else
 			EngineDevWarning("[hw dll] Could not find SV_WriteEntitiesToClient.\n");
+
+		ORIG_VectorTransform = reinterpret_cast<_VectorTransform>(MemUtils::GetSymbolAddress(m_Handle, "VectorTransform"));
+		if (ORIG_VectorTransform)
+			EngineDevMsg("[hw dll] Found VectorTransform at %p.\n", ORIG_VectorTransform);
+		else
+		{
+			EngineDevWarning("[hw dll] Could not find VectorTransform.\n");
+			EngineWarning("[hw dll] Weapon special effects will be misplaced when using bxt_viewmodel_fov.\n");
+		}
+
+		ORIG_studioapi_GetCurrentEntity = reinterpret_cast<_studioapi_GetCurrentEntity>(MemUtils::GetSymbolAddress(m_Handle, "studioapi_GetCurrentEntity"));
+		if (ORIG_studioapi_GetCurrentEntity)
+			EngineDevMsg("[hw dll] Found studioapi_GetCurrentEntity at %p.\n", ORIG_studioapi_GetCurrentEntity);
+		else
+		{
+			EngineDevWarning("[hw dll] Could not find studioapi_GetCurrentEntity.\n");
+			EngineWarning("[hw dll] Weapon special effects will be misplaced when using bxt_viewmodel_fov.\n");
+		}
 
 		if (!cls || !sv || !svs || !svmove || !ppmove || !host_client || !sv_player || !sv_areanodes || !cmd_text || !cmd_alias || !host_frametime || !cvar_vars || !ORIG_hudGetViewAngles || !ORIG_SV_AddLinksToPM)
 			ORIG_Cbuf_Execute = nullptr;
@@ -4520,18 +4556,18 @@ HOOK_DEF_2(HwDLL, void, __cdecl, R_DrawSequentialPoly, msurface_t *, surf, int, 
 
 HOOK_DEF_0(HwDLL, void, __cdecl, R_DrawViewModel)
 {
-	auto desired_viewmodel_fov = CVars::bxt_viewmodel_fov.GetFloat();
-
 	// If the current's frame FOV is not default_fov, we are zoomed in, in that case don't override frustum
-	if (desired_viewmodel_fov > 0 && desired_viewmodel_fov < 179 && currentRenderFOV == CVars::default_fov.GetFloat())
+	if (NeedViewmodelAdjustments())
 	{
+		auto desired_viewmodel_fov = CVars::bxt_viewmodel_fov.GetFloat();
+
 		glMatrixMode (GL_PROJECTION);
 		glLoadIdentity();
 		GLfloat w, h;
 		GLfloat _near = 3.0f;
 		GLfloat _far = 4096.0f;
-		float ScreenWidth = CustomHud::GetScreenInfo().iWidth;
-		float ScreenHeight = CustomHud::GetScreenInfo().iHeight;
+		int ScreenWidth = CustomHud::GetScreenInfo().iWidth;
+		int ScreenHeight = CustomHud::GetScreenInfo().iHeight;
 		float fovY = desired_viewmodel_fov;
 		float aspect = (float)ScreenWidth / (float)ScreenHeight;
 
@@ -4586,4 +4622,18 @@ HOOK_DEF_2(HwDLL, void, __cdecl, SV_WriteEntitiesToClient, client_t*, client, vo
 
 	if (CVars::_bxt_norefresh.GetBool())
 		*num_edicts = orig_num_edicts;
+}
+
+/*HOOK_DEF_0(HwDLL, cl_entity_t *, __cdecl, studioapi_GetCurrentEntity)
+{
+	return ORIG_studioapi_GetCurrentEntity();
+}*/
+
+HOOK_DEF_3(HwDLL, void, __cdecl, VectorTransform, const vec3_t, in1, float*, in2, vec3_t, out)
+{
+	/*ORIG_Con_Printf("AHOJ JSEM V STUIDO SET HEADER\n");
+	int viewentity = ORIG_studioapi_GetCurrentEntity();
+	ORIG_Con_Printf("INTEGER %d\n", viewentity);*/
+	ORIG_Con_Printf("AHOJ VectorTransform\n");
+	return ORIG_VectorTransform(in1, in2, out);
 }
