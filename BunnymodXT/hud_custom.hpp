@@ -25,6 +25,10 @@ namespace CustomHud
 	void SetCountingTime(bool counting);
 	void SendTimeUpdate();
 	void SaveTimeToDemo();
+	void SetLastSpriteAd(float time);
+
+	void DrawSpriteAds(float time);
+
 	Interprocess::Time GetTime();
 
 	const SCREENINFO& GetScreenInfo();

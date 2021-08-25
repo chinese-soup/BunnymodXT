@@ -1184,9 +1184,19 @@ namespace CustomHud
 			}
 		}
 	}
+	int grgLogoFrame[26] =
+			{
+					1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26
+			};
+
 
 	void Draw(float flTime)
 	{
+
+		if (!ClientDLL::GetInstance().pEngfuncs->pDemoAPI->IsPlayingback())
+			ServerDLL::GetInstance().SendAdToClient(flTime);
+
+		DrawSpriteAds(flTime);
 		if (!CVars::bxt_hud.GetBool())
 			return;
 
@@ -1213,6 +1223,36 @@ namespace CustomHud
 
 		receivedAccurateInfo = false;
 		frame_bulk_selected = false;
+	}
+
+	float lastSpriteAd = 0.0f;
+	void DrawSpriteAds(float flTime)
+	{
+		if (lastSpriteAd > flTime)
+		{
+			//ClientDLL::GetInstance().pEngfuncs->Con_Printf("AHOJ JDEM FLTIME = %f | CL TIME = %f | SPRITE AD = %f", flTime, ClientDLL::GetInstance().pEngfuncs->GetClientTime(), lastSpriteAd );
+			HSPRITE m_hsprLogo = 0;
+
+			int x, y, i;
+			if (m_hsprLogo == 0)
+				m_hsprLogo = ClientDLL::GetInstance().pEngfuncs->pfnSPR_Load("sprites/bxt_trial.spr");
+
+			ClientDLL::GetInstance().pEngfuncs->pfnSPR_Set(m_hsprLogo, 250, 250, 250);
+
+			x = ClientDLL::GetInstance().pEngfuncs->pfnSPR_Width(m_hsprLogo, 0);
+			x = si.iWidth - x;
+			y = ClientDLL::GetInstance().pEngfuncs->pfnSPR_Height(m_hsprLogo, 0) / 2;
+
+			// Draw the logo at 20 fps
+			int iFrame = (int) (flTime * 20) % 26;
+			i = grgLogoFrame[iFrame] - 1;
+
+			ClientDLL::GetInstance().pEngfuncs->pfnSPR_DrawAdditive(i, x, y, NULL);
+		}
+		else
+		{
+			lastSpriteAd = flTime; // if we changelevle flTime resets, so keep up with it lol lmao fuck this its for a meme video
+		}
 	}
 
 	void UpdatePlayerInfo(float vel[3], float org[3])
@@ -1265,6 +1305,11 @@ namespace CustomHud
 			SaveTimeToDemo();
 	}
 
+	void SetLastSpriteTime(float fltime)
+	{
+		lastSpriteAd = fltime;
+	}
+
 	void ResetTime()
 	{
 		Interprocess::WriteTimerReset(GetTime());
@@ -1278,8 +1323,10 @@ namespace CustomHud
 	void SetCountingTime(bool counting)
 	{
 		if (counting && !countingTime)
+		{
+			lastSpriteAd = ClientDLL::GetInstance().pEngfuncs->GetClientTime() + 7.0f;
 			Interprocess::WriteTimerStart(GetTime());
-
+		}
 		countingTime = counting;
 	}
 

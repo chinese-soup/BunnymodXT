@@ -48,7 +48,9 @@ public:
 		static ServerDLL instance;
 		return instance;
 	}
-
+	void SendSayTextAdToClient(bool saveLoad);
+	void SendAdToClient(float flTime);
+	float lastAdTime;
 	virtual void Hook(const std::wstring& moduleName, void* moduleHandle, void* moduleBase, size_t moduleLength, bool needToIntercept);
 	virtual void Unhook();
 	virtual void Clear();

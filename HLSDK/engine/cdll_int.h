@@ -27,6 +27,7 @@ extern "C" {
 #endif
 
 #include "../common/const.h"
+#include "../common/demo_api.h"
 
 
 // this file is included by both the engine and the client-dll,
@@ -67,6 +68,22 @@ typedef struct client_sprite_s
 	int iRes;
 	wrect_t rc;
 } client_sprite_t;
+
+
+typedef int HSPRITE;	// handle to a graphic
+/*HSPRITE LoadSprite(const char *pszName)
+{
+	int i;
+	char sz[256];
+
+		i = 640;
+
+	sprintf(sz, pszName, i);
+
+	return SPR_Load(sz);
+}*/
+
+
 
 typedef struct client_textmessage_s
 {

@@ -120,6 +120,8 @@ set (HEADER_FILES
 	SPTLib/sptlib.hpp
 	BunnymodXT/modules/HwDLL.hpp
 	BunnymodXT/modules/ClientDLL.hpp
+	#BunnymodXT/bmpread.h
+	#BunnymodXT/bmpread.c
 	BunnymodXT/modules/ServerDLL.hpp
 	BunnymodXT/modules/SDL.hpp
 	BunnymodXT/bunnymodxt.hpp
@@ -167,7 +169,7 @@ if (MSVC)
 	include_directories ("SPTLib/Windows/minhook/include")
 	set (SOURCE_FILES ${SOURCE_FILES} ${WINDOWS_FILES} ${HEADER_FILES})
 else ()
-	set (SOURCE_FILES ${SOURCE_FILES} ${LINUX_FILES} ${HEADER_FILES})
+	set (SOURCE_FILES ${SOURCE_FILES} ${LINUX_FILES} ${HEADER_FILES} HLSDK/common/cl_entity.h HLSDK/common/entity_state.h HLSDK/common/pm_info.h HLSDK/engine/progs.h)
 endif ()
 
 add_library (BunnymodXT SHARED ${SOURCE_FILES})

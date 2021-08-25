@@ -22,6 +22,9 @@ class ClientDLL : public IHookableNameFilter
 	HOOK_DECL(void, __cdecl, HUD_DrawTransparentTriangles)
 	HOOK_DECL(int, __cdecl, HUD_Key_Event, int down, int keynum, const char* pszCurrentBinding)
 	HOOK_DECL(int, __cdecl, HUD_UpdateClientData, client_data_t* pcldata, float flTime)
+	//HOOK_DECL(void, __cdecl, MsgFunc_TextMsg, void* thisptr, char* pszname, int iSize, void *pbuf)
+	HOOK_DECL(void, __cdecl, MsgFunc_TextMsg, void* thisptr, client_textmessage_t* pMessage, float time)
+	//
 
 public:
 	static ClientDLL& GetInstance()
@@ -43,6 +46,7 @@ public:
 	Vector last_vieworg;
 	Vector last_viewangles;
 	unsigned short last_buttons;
+	//bmpread_t bitmap;
 
 	// When set to false, the mouse won't move the camera.
 	void SetMouseState(bool active);

@@ -3575,6 +3575,9 @@ void HwDLL::InsertCommands()
 		}
 
 		if (autoRecordNow) {
+			if (autoRecordDemoNumber > 1)
+				ServerDLL::GetInstance().SendSayTextAdToClient(true);
+
 			std::ostringstream ss;
 			ss << "record \"" << autoRecordDemoName.c_str() << '_' << autoRecordDemoNumber++ << "\"\n";
 			ORIG_Cbuf_InsertText(ss.str().c_str());

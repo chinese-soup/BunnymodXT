@@ -64,6 +64,11 @@ extern "C" void __cdecl _ZN12CTriggerSave9SaveTouchEP11CBaseEntity(void* thisptr
 {
 	return ServerDLL::HOOKED_CTriggerSave__SaveTouch_Linux(thisptr, pOther);
 }
+
+extern "C" void __cdecl _Z18UTIL_HudMessageAllRK14hudtextparms_sPKc(void *textparams, char* pMessage)
+{
+	//return ServerDLL::HOOKED_UTIL_HudMessageAll(textparams, pMessage);
+}
 #endif
 
 void ServerDLL::Hook(const std::wstring& moduleName, void* moduleHandle, void* moduleBase, size_t moduleLength, bool needToIntercept)
@@ -109,6 +114,7 @@ void ServerDLL::Hook(const std::wstring& moduleName, void* moduleHandle, void* m
 			ORIG_CChangeLevel__UseChangeLevel, HOOKED_CChangeLevel__UseChangeLevel,
 			ORIG_CChangeLevel__TouchChangeLevel, HOOKED_CChangeLevel__TouchChangeLevel,
 			ORIG_CBaseMonster__Killed, HOOKED_CBaseMonster__Killed);
+			//ORIG_UTIL_MessageAll, HOOKED_UTIL_MessageAll);
 	}
 }
 
@@ -144,6 +150,7 @@ void ServerDLL::Unhook()
 			ORIG_CChangeLevel__UseChangeLevel,
 			ORIG_CChangeLevel__TouchChangeLevel,
 			ORIG_CBaseMonster__Killed);
+			//ORIG_UTIL_MessageAll);
 	}
 
 	Clear();
@@ -191,6 +198,7 @@ void ServerDLL::Clear()
 	ORIG_CChangeLevel__UseChangeLevel = nullptr;
 	ORIG_CChangeLevel__TouchChangeLevel = nullptr;
 	ORIG_CChangeLevel__InTransitionVolume = nullptr;
+	//ORIG_UTIL_MessageAll = nullptr;
 	ppmove = nullptr;
 	offPlayerIndex = 0;
 	offOldbuttons = 0;
@@ -764,6 +772,7 @@ void ServerDLL::FindStuff()
 	ORIG_CmdStart = reinterpret_cast<_CmdStart>(MemUtils::GetSymbolAddress(m_Handle, "_Z8CmdStartPK7edict_sPK9usercmd_sj"));
 	ORIG_AddToFullPack = reinterpret_cast<_AddToFullPack>(MemUtils::GetSymbolAddress(m_Handle, "_Z13AddToFullPackP14entity_state_siP7edict_sS2_iiPh"));
 	ORIG_ClientCommand = reinterpret_cast<_ClientCommand>(MemUtils::GetSymbolAddress(m_Handle, "_Z13ClientCommandP7edict_s"));
+	//ORIG_UTIL_MessageAll = reinterpret_cast<_UTIL_MessageAll>(MemUtils::GetSymbolAddress(m_Handle, "_Z18UTIL_HudMessageAllRK14hudtextparms_sPKc"));
 	ORIG_PM_Move = reinterpret_cast<_PM_Move>(MemUtils::GetSymbolAddress(m_Handle, "PM_Move"));
 	if (ORIG_CmdStart && ORIG_AddToFullPack && ORIG_ClientCommand && ORIG_PM_Move) {
 		EngineDevMsg("[server dll] Found CmdStart at %p.\n", ORIG_CmdStart);
@@ -1093,6 +1102,7 @@ void ServerDLL::FindStuff()
 void ServerDLL::RegisterCVarsAndCommands()
 {
 	EngineDevMsg("[server dll] Registering CVars.\n");
+	lastAdTime = 0;
 
 	#define REG(cvar) HwDLL::GetInstance().RegisterCVar(CVars::cvar)
 	REG(bxt_timer_autostop);
@@ -1132,8 +1142,65 @@ std::vector<const edict_t *> ServerDLL::GetUseableEntities(const Vector &origin,
 	return entities;
 }
 
+
+static unsigned short FixedUnsigned16( float value, float scale )
+{
+	int output;
+
+	output = value * scale;
+	if ( output < 0 )
+		output = 0;
+	if ( output > 0xFFFF )
+		output = 0xFFFF;
+
+	return (unsigned short)output;
+}
+
+static short FixedSigned16( float value, float scale )
+{
+	int output;
+
+	output = value * scale;
+
+	if ( output > 32767 )
+		output = 32767;
+
+	if ( output < -32768 )
+		output = -32768;
+
+	return (short)output;
+}
+
+
+
 HOOK_DEF_0(ServerDLL, void, __cdecl, PM_Jump)
 {
+
+//	MESSAGE_BEGIN( MSG_BROADCAST, SVC_TEMPENTITY, NULL );
+	/*pEngfuncs->pfnMessageBegin( MSG_BROADCAST, SVC_TEMPENTITY, NULL, NULL);
+	WRITE_BYTE( TE_TEXTMESSAGE );
+	WRITE_BYTE( 3 & 0xFF );
+
+	WRITE_SHORT( FixedSigned16( 0.25, 1<<13 ) );
+	WRITE_SHORT( FixedSigned16( 0.5, 1<<13 ) );
+	WRITE_BYTE( 1 );
+
+	WRITE_BYTE( 255 );
+	WRITE_BYTE( 255 );
+	WRITE_BYTE( 255 );
+	WRITE_BYTE( 255 );
+
+	WRITE_BYTE( 255 );
+	WRITE_BYTE( 255 );
+	WRITE_BYTE( 255 );
+	WRITE_BYTE( 255 );
+
+	WRITE_SHORT( FixedUnsigned16( 10, 1<<8 ) );
+	WRITE_SHORT( FixedUnsigned16( 10, 1<<8 ) );
+	WRITE_SHORT( FixedUnsigned16( 200, 1<<8 ) );
+
+	WRITE_STRING( "This speedrun was done with BXT trial version. Buy full version for only $3.99 at bxt.rs" );
+	MESSAGE_END();*/
 	auto pmove = reinterpret_cast<uintptr_t>(*ppmove);
 	int playerIndex = *reinterpret_cast<int*>(pmove + offPlayerIndex);
 
@@ -1991,6 +2058,74 @@ float fast_cvar_get_float(const char* name)
 	return ORIG_CVarGetFloat(name);
 }
 
+#define MESSAGE_END		(*pEngfuncs->pfnMessageEnd)
+#define WRITE_BYTE		(*pEngfuncs->pfnWriteByte)
+#define WRITE_CHAR		(*pEngfuncs->pfnWriteChar)
+#define WRITE_SHORT		(*pEngfuncs->pfnWriteShort)
+#define WRITE_LONG		(*pEngfuncs->pfnWriteLong)
+#define WRITE_ANGLE		(*pEngfuncs->pfnWriteAngle)
+#define WRITE_COORD		(*pEngfuncs->pfnWriteCoord)
+#define WRITE_STRING	(*pEngfuncs->pfnWriteString)
+#define WRITE_ENTITY	(*pEngfuncs->pfnWriteEntity)
+#define SVC_TEMPENTITY		23
+
+void ServerDLL::SendSayTextAdToClient(bool saveLoad)
+{
+	auto bla = pEngfuncs->pfnRegUserMsg("TextMsg", -1);
+	pEngfuncs->pfnMessageBegin( MSG_ALL, bla, NULL, NULL);
+	WRITE_BYTE( 4 );
+	WRITE_STRING( "[BXT TRIAL VERSION]" );
+	MESSAGE_END();
+	pEngfuncs->pfnMessageBegin( MSG_ALL, bla, NULL, NULL);
+	WRITE_BYTE( 3 );
+	WRITE_STRING( "This speedrun was done with BXT trial version. Buy the full version for only $3.99 at bxt.rs" );
+	MESSAGE_END();
+
+	if (saveLoad)
+	{
+		pEngfuncs->pfnMessageBegin( MSG_ALL, bla, NULL, NULL);
+		WRITE_BYTE( 3 );
+		WRITE_STRING( "Save and loading again while on the trial version? Adding +5 seconds to your timer." );
+		MESSAGE_END();
+	}
+}
+
+void ServerDLL::SendAdToClient(float flTime)
+{
+	if(lastAdTime < flTime)
+	{
+		EngineDevMsg("AD TIME EXPIRED, SEND AN AD TO THE PLAYER. %f < %f \n", flTime, lastAdTime);
+
+		pEngfuncs->pfnMessageBegin( MSG_BROADCAST, SVC_TEMPENTITY, NULL, NULL);
+		WRITE_BYTE( TE_TEXTMESSAGE );
+		WRITE_BYTE( 2 & 0xFF );
+
+		WRITE_SHORT( FixedSigned16( 0.18, 1<<13 ) );
+		WRITE_SHORT( FixedSigned16( 0.5, 1<<13 ) );
+		WRITE_BYTE( 2 );
+
+		WRITE_BYTE( 255 );
+		WRITE_BYTE( 255 );
+		WRITE_BYTE( 255 );
+		WRITE_BYTE( 255 );
+
+		WRITE_BYTE( 128 );
+		WRITE_BYTE( 128 );
+		WRITE_BYTE( 128 );
+		WRITE_BYTE( 120 );
+
+		WRITE_SHORT( FixedUnsigned16( 0.0f, 1<<8 ) );
+		WRITE_SHORT( FixedUnsigned16( 0.5f, 1<<8 ) );
+		WRITE_SHORT( FixedUnsigned16( 10.0f, 1<<8 ) );
+
+		WRITE_STRING( "This speedrun was done with BXT trial version. Buy the full version for only $3.99 at bxt.rs" );
+		MESSAGE_END();
+
+		lastAdTime = flTime + 8.0;
+
+	}
+}
+
 HOOK_DEF_3(ServerDLL, void, __fastcall, CBasePlayer__CheatImpulseCommands, void*, thisptr, int, edx, int, iImpulse)
 {
 	if (pEngfuncs) {
@@ -2037,6 +2172,9 @@ HOOK_DEF_2(ServerDLL, void, __cdecl, CTriggerSave__SaveTouch_Linux, void*, thisp
 
 HOOK_DEF_6(ServerDLL, void, __fastcall, CChangeLevel__UseChangeLevel, void*, thisptr, int, edx, void*, pActivator, void*, pCaller, int, useType, float, value)
 {
+	lastAdTime = 0.0f;
+	SendSayTextAdToClient(false);
+
 	if (CVars::bxt_disable_changelevel.GetBool())
 		return;
 
@@ -2045,6 +2183,9 @@ HOOK_DEF_6(ServerDLL, void, __fastcall, CChangeLevel__UseChangeLevel, void*, thi
 
 HOOK_DEF_3(ServerDLL, void, __fastcall, CChangeLevel__TouchChangeLevel, void*, thisptr, int, edx, void*, pOther)
 {
+	lastAdTime = 0.0f;
+	SendSayTextAdToClient(false);
+
 	if (CVars::bxt_disable_changelevel.GetBool())
 		return;
 

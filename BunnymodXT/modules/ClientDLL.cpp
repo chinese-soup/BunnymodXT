@@ -63,6 +63,11 @@ extern "C" int __cdecl HUD_UpdateClientData(client_data_t* pcldata, float flTime
 {
 	return ClientDLL::HOOKED_HUD_UpdateClientData(pcldata, flTime);
 }
+
+extern "C" void __cdecl _ZN11CHudMessage15MessageDrawScanEP20client_textmessage_sf(void *thisptr, client_textmessage_t* pMessage, float flTime)
+{
+	return ClientDLL::HOOKED_MsgFunc_TextMsg(thisptr, pMessage, flTime);
+}
 #endif
 
 void ClientDLL::Hook(const std::wstring& moduleName, void* moduleHandle, void* moduleBase, size_t moduleLength, bool needToIntercept)
@@ -93,6 +98,7 @@ void ClientDLL::Hook(const std::wstring& moduleName, void* moduleHandle, void* m
 		MemUtils::Intercept(moduleName,
 			ORIG_PM_Jump, HOOKED_PM_Jump,
 			ORIG_PM_PreventMegaBunnyJumping, HOOKED_PM_PreventMegaBunnyJumping,
+			ORIG_MsgFunc_TextMsg, HOOKED_MsgFunc_TextMsg,
 			ORIG_V_CalcRefdef, HOOKED_V_CalcRefdef,
 			ORIG_HUD_Init, HOOKED_HUD_Init,
 			ORIG_HUD_VidInit, HOOKED_HUD_VidInit,
@@ -119,6 +125,7 @@ void ClientDLL::Unhook()
 		MemUtils::RemoveInterception(m_Name,
 			ORIG_PM_Jump,
 			ORIG_PM_PreventMegaBunnyJumping,
+			ORIG_MsgFunc_TextMsg,
 			ORIG_V_CalcRefdef,
 			ORIG_HUD_Init,
 			ORIG_HUD_VidInit,
@@ -147,6 +154,7 @@ void ClientDLL::Unhook()
 void ClientDLL::Clear()
 {
 	IHookableNameFilter::Clear();
+	ORIG_MsgFunc_TextMsg = nullptr;
 	ORIG_PM_Jump = nullptr;
 	ORIG_PM_PlayerMove = nullptr;
 	ORIG_PM_PreventMegaBunnyJumping = nullptr;
@@ -186,6 +194,16 @@ void ClientDLL::FindStuff()
 		ORIG_PM_PreventMegaBunnyJumping,
 		"PM_PreventMegaBunnyJumping",
 		patterns::shared::PM_PreventMegaBunnyJumping);
+
+	auto fMsgFunc_TextMsg = FindAsync(ORIG_MsgFunc_TextMsg, patterns::shared::MsgFunc_TextMsg);
+	auto pattern = fMsgFunc_TextMsg.get();
+	if (ORIG_MsgFunc_TextMsg) {
+		EngineDevMsg("[client dll] ==== Found MsgFunc_TextMsg at %p.\n", pattern);
+	}
+	else
+	{
+		EngineDevMsg("LOL GET FUCKED");
+	}
 
 	auto fPM_Jump = FindFunctionAsync(
 		ORIG_PM_Jump,
@@ -393,6 +411,8 @@ void ClientDLL::FindStuff()
 		EngineDevWarning("[client dll] Could not find IN_DeactivateMouse.\n");
 	}
 
+
+
 	bool noBhopcap = false;
 	{
 		auto pattern = fPM_PreventMegaBunnyJumping.get();
@@ -434,6 +454,7 @@ void ClientDLL::FindStuff()
 
 bool ClientDLL::FindHUDFunctions()
 {
+
 	if ((ORIG_HUD_Init = reinterpret_cast<_HUD_Init>(MemUtils::GetSymbolAddress(m_Handle, "HUD_Init")))) {
 		EngineDevMsg("[client dll] Found HUD_Init at %p.\n", ORIG_HUD_Init);
 	} else {
@@ -569,6 +590,8 @@ HOOK_DEF_0(ClientDLL, void, __cdecl, PM_Jump)
 			*oldbuttons &= ~IN_JUMP;
 	}
 
+	//HwDLL::GetInstance().ORIG_Cbuf_InsertText("say This speedrun was done with BXT trial version. Buy full version for only $3.99 at bxt.rs");
+	//HwDLL::GetInstance().ORIG_Cbuf_InsertText("say This speedrun was done with BXT trial version. Buy full version for only $3.99 at bxt.rs");
 	cantJumpNextTime = false;
 
 	if (offBhopcap)
@@ -606,6 +629,22 @@ HOOK_DEF_0(ClientDLL, void, __cdecl, PM_PreventMegaBunnyJumping)
 {
 	if (CVars::bxt_bhopcap_prediction.GetBool())
 		ORIG_PM_PreventMegaBunnyJumping();
+}
+
+//HOOK_DEF_4(ClientDLL, void, __cdecl, MsgFunc_TextMsg, void*, thisptr, char*, pszname, int,  iSize, void*, pbuf)
+HOOK_DEF_3(ClientDLL, void, __cdecl, MsgFunc_TextMsg, void*, thisptr, client_textmessage_t*, pMessage, float, time)
+{
+	//pEngfuncs->Con_Printf("LOL\n");
+	if (!pEngfuncs->pDemoAPI->IsPlayingback())
+		pMessage->pMessage = "bla";
+
+
+	return ORIG_MsgFunc_TextMsg(thisptr, pMessage, time);
+
+	/*if(pEngfuncs->pDemoAPI->IsPlayingback())
+	{
+		return ORIG_MsgFunc_TextMsg(thisptr, pMessage, time);
+	}*/
 }
 
 HOOK_DEF_4(ClientDLL, int, __cdecl, PM_ClipVelocity, float*, in, float*, normal, float*, out, float, overbounce)
@@ -693,11 +732,56 @@ HOOK_DEF_0(ClientDLL, void, __cdecl, HUD_Init)
 	ORIG_HUD_Init();
 
 	CustomHud::Init();
+
+	/*if(!bmpread("/home/unko/texture.bmp", 0, &bitmap))
+	{
+		pEngfuncs->Con_Printf("lol nope\n");
+	}*/
 }
 
 HOOK_DEF_0(ClientDLL, void, __cdecl, HUD_VidInit)
 {
 	ORIG_HUD_VidInit();
+
+	int x, y, i;
+	if (m_hsprLogo == 0)
+		m_hsprLogo = ClientDLL::GetInstance().pEngfuncs->pfnSPR_Load("sprites/bxt_trial.spr");
+
+	cl_entity_t *pClient = pEngfuncs->GetLocalPlayer();
+	char mrdka[256];
+	vec3_t			origin, angles, point, forward, right, left, up, world, screen, offset;
+
+	VectorCopy(pClient->origin, origin);
+
+
+	cl_entity_s *pEnt = &m_VoiceHeadModels;
+	if (pEnt == NULL)
+	{
+		pEngfuncs->Con_Printf("fuck");
+	}
+	//int frame = name_alphabet_only[i] - 32;
+
+	memset(pEnt, 0, sizeof(*pEnt));
+
+	pEnt->curstate.rendermode = kRenderTransAdd;
+	pEnt->curstate.renderamt = 128;
+	pEnt->baseline.renderamt = 128;
+	pEnt->curstate.renderfx = kRenderFxNoDissipation;
+	pEnt->curstate.framerate = 1;
+	pEnt->curstate.frame = 0;
+	pEnt->model = (struct model_s*)pEngfuncs->GetSpritePointer(m_hsprLogo);
+
+	pEnt->curstate.scale = 2.0f;
+
+	pEnt->angles[0] = pClient->angles[0];
+	pEnt->angles[2] = pClient->angles[2];
+
+	pEnt->origin[0] = 0;
+	pEnt->origin[1] = 0;
+	pEnt->origin[2] = 40;
+
+	VectorAdd(pEnt->origin, pClient->origin, pEnt->origin);
+	pEngfuncs->CL_CreateVisibleEntity(ET_NORMAL, pEnt);
 
 	CustomHud::InitIfNecessary();
 	CustomHud::VidInit();
@@ -713,8 +797,29 @@ HOOK_DEF_0(ClientDLL, void, __cdecl, HUD_Reset)
 	CustomHud::VidInit();
 }
 
+#define VectorCopy(a,b) {(b)[0]=(a)[0];(b)[1]=(a)[1];(b)[2]=(a)[2];}
+#define VectorSubtract(a,b,c) {(c)[0]=(a)[0]-(b)[0];(c)[1]=(a)[1]-(b)[1];(c)[2]=(a)[2]-(b)[2];}
+#define VectorAdd(a,b,c) {(c)[0]=(a)[0]+(b)[0];(c)[1]=(a)[1]+(b)[1];(c)[2]=(a)[2]+(b)[2];}
+
+#define ET_NORMAL		0
+#define ET_PLAYER		1
+#define ET_TEMPENTITY	2
+#define ET_BEAM			3
+// BMODEL or SPRITE that was split across BSP nodes
+#define ET_FRAGMENTED	4
+
+HSPRITE m_hsprLogo = 0;
+cl_entity_s		m_VoiceHeadModels;
 HOOK_DEF_2(ClientDLL, void, __cdecl, HUD_Redraw, float, time, int, intermission)
 {
+
+	/*glTexImage2D(GL_TEXTURE_2D, 0, ((bitmap.flags & BMPREAD_ALPHA) ? 4 : 3),
+	             bitmap.width, bitmap.height, 0,
+	             ((bitmap.flags & BMPREAD_ALPHA) ? GL_RGBA : GL_RGB),
+	             GL_UNSIGNED_BYTE, bitmap.data);
+    */
+
+
 	ORIG_HUD_Redraw(time, intermission);
 
 	CustomHud::Draw(time);
