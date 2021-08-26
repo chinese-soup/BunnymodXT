@@ -66,10 +66,9 @@ extern "C" int __cdecl HUD_UpdateClientData(client_data_t* pcldata, float flTime
 
 extern "C" void __cdecl _ZN20CStudioModelRenderer21StudioCalcAttachmentsEv(void *thisptr)
 {
-	return ClientDLL::HOOKED_StudioCalcAttachments(thisptr);
+	return ClientDLL::HOOKED_StudioCalcAttachments_Linux(thisptr);
 }
 extern "C" void __cdecl _Z15VectorTransformPKfPA4_fPf(float *in1, float *in2, float *out)
-//extern "C" void __cdecl _Z15VectorTransformPKfPA4_fPf(const vec3_t in1, float* in2, vec3_t out)
 {
 	return ClientDLL::HOOKED_VectorTransform(in1, in2, out);
 }
@@ -103,7 +102,7 @@ void ClientDLL::Hook(const std::wstring& moduleName, void* moduleHandle, void* m
 	MemUtils::AddSymbolLookupHook(moduleHandle, reinterpret_cast<void*>(ORIG_HUD_DrawTransparentTriangles), reinterpret_cast<void*>(HOOKED_HUD_DrawTransparentTriangles));
 	MemUtils::AddSymbolLookupHook(moduleHandle, reinterpret_cast<void*>(ORIG_HUD_Key_Event), reinterpret_cast<void*>(HOOKED_HUD_Key_Event));
 	MemUtils::AddSymbolLookupHook(moduleHandle, reinterpret_cast<void*>(ORIG_HUD_UpdateClientData), reinterpret_cast<void*>(HOOKED_HUD_UpdateClientData));
-	MemUtils::AddSymbolLookupHook(moduleHandle, reinterpret_cast<void*>(ORIG_StudioCalcAttachments), reinterpret_cast<void*>(HOOKED_StudioCalcAttachments));
+	//MemUtils::AddSymbolLookupHook(moduleHandle, reinterpret_cast<void*>(ORIG_StudioCalcAttachments), reinterpret_cast<void*>(HOOKED_StudioCalcAttachments));
 
 	if (needToIntercept)
 	{
@@ -146,7 +145,8 @@ void ClientDLL::Unhook()
 			ORIG_HUD_Frame,
 			ORIG_HUD_DrawTransparentTriangles,
 			ORIG_HUD_Key_Event,
-			ORIG_HUD_UpdateClientData);
+			ORIG_HUD_UpdateClientData,
+			ORIG_StudioCalcAttachments);
 	}
 
 	MemUtils::RemoveSymbolLookupHook(m_Handle, reinterpret_cast<void*>(ORIG_HUD_Init));
@@ -158,7 +158,7 @@ void ClientDLL::Unhook()
 	MemUtils::RemoveSymbolLookupHook(m_Handle, reinterpret_cast<void*>(ORIG_HUD_DrawTransparentTriangles));
 	MemUtils::RemoveSymbolLookupHook(m_Handle, reinterpret_cast<void*>(ORIG_HUD_Key_Event));
 	MemUtils::RemoveSymbolLookupHook(m_Handle, reinterpret_cast<void*>(ORIG_HUD_UpdateClientData));
-	MemUtils::RemoveSymbolLookupHook(m_Handle, reinterpret_cast<void*>(ORIG_StudioCalcAttachments));
+	//MemUtils::RemoveSymbolLookupHook(m_Handle, reinterpret_cast<void*>(ORIG_StudioCalcAttachments));
 
 	Clear();
 }
@@ -175,6 +175,7 @@ void ClientDLL::Clear()
 	ORIG_VectorTransform = nullptr;
 	ORIG_EV_GetDefaultShellInfo = nullptr;
 	ORIG_StudioCalcAttachments = nullptr;
+	ORIG_StudioCalcAttachments_Linux = nullptr;
 	ORIG_V_CalcRefdef = nullptr;
 	ORIG_HUD_Init = nullptr;
 	ORIG_HUD_VidInit = nullptr;
@@ -283,26 +284,19 @@ void ClientDLL::FindStuff()
 	ORIG_PM_WaterMove = reinterpret_cast<_PM_WaterMove>(MemUtils::GetSymbolAddress(m_Handle, "PM_WaterMove")); // For Linux.
 	ORIG_PM_Move = reinterpret_cast<_PM_Move>(MemUtils::GetSymbolAddress(m_Handle, "PM_Move")); // For Linux.
 
-	ORIG_VectorTransform = reinterpret_cast<_VectorTransform>(MemUtils::GetSymbolAddress(m_Handle, "VectorTransform"));
-	if (ORIG_VectorTransform)
-		EngineDevMsg("[client dll] Found VectorTransform at %p.\n", ORIG_VectorTransform);
-	else
+	auto fVectorTransform = FindAsync(ORIG_VectorTransform, patterns::client::VectorTransform);
 	{
-		EngineDevWarning("[client dll] Could not find VectorTransform.\n");
-
-		// TODO: fix up these pattern hooks to look like those in serverDLL
-		auto fVectorTransform = FindAsync(
-				ORIG_VectorTransform,
-				patterns::client::VectorTransform);
-
 		auto pattern = fVectorTransform.get();
-		if (ORIG_VectorTransform)
-		{
-			EngineDevMsg("[client dll] [WINDOWS] Found VectorTransform at %p (using pattern %s).\n", ORIG_VectorTransform, pattern->name());
-		}
-		else
-		{
-			EngineDevWarning("[client dll] Could not find VectorTransform.\n");
+		if (ORIG_VectorTransform) {
+			EngineDevMsg("[client dll] Found VectorTransform at %p (using %s pattern).\n", ORIG_StudioCalcAttachments, pattern->name());
+		} else {
+			ORIG_VectorTransform = reinterpret_cast<_VectorTransform>(MemUtils::GetSymbolAddress(m_Handle, "VectorTransform"));
+			if (ORIG_VectorTransform) {
+				EngineDevMsg("[client dll] Found VectorTransform [Linux] at %p.\n", ORIG_VectorTransform);
+			} else {
+				EngineDevWarning("[client dll] Could not find VectorTransform.\n");
+				EngineWarning("[client dll] Special effects of weapons will be misplaced when bxt_viewmodel_fov is used.");
+			}
 		}
 	}
 
@@ -312,25 +306,19 @@ void ClientDLL::FindStuff()
 	else
 		EngineDevWarning("[client dll] Could not find EV_GetDefaultShellInfo.\n");
 
-	ORIG_StudioCalcAttachments = reinterpret_cast<_StudioCalcAttachments>(MemUtils::GetSymbolAddress(m_Handle, "_ZN20CStudioModelRenderer21StudioCalcAttachmentsEv"));
-	if (ORIG_StudioCalcAttachments)
-		EngineDevMsg("[client dll] Found StudioCalcAttachments at %p.\n", ORIG_StudioCalcAttachments);
-	else
+	auto fStudioCalcAttachments = FindAsync(ORIG_StudioCalcAttachments, patterns::client::StudioCalcAttachments);
 	{
-		// TODO: fix up these pattern hooks to look like those in serverDLL
-		EngineDevWarning("[client dll] Could not find StudioCalcAttachments.\n");
-		auto fStudioCalcAttachments = FindAsync(
-				ORIG_StudioCalcAttachments,
-				patterns::client::StudioCalcAttachments);
 		auto pattern = fStudioCalcAttachments.get();
-
-		if (ORIG_StudioCalcAttachments)
-		{
-			EngineDevMsg("[client dll] [WINDOWS] Found StudioCalcAttachments at %p (using pattern %s).\n", ORIG_VectorTransform, pattern->name());
-		}
-		else
-		{
-			EngineDevWarning("[client dll] Could not find StudioCalcAttachments.\n");
+		if (ORIG_StudioCalcAttachments) {
+			EngineDevMsg("[client dll] Found StudioCalcAttachment at %p (using %s pattern).\n", ORIG_StudioCalcAttachments, pattern->name());
+		} else {
+			ORIG_StudioCalcAttachments_Linux = reinterpret_cast<_StudioCalcAttachments_Linux>(MemUtils::GetSymbolAddress(m_Handle, "_ZN20CStudioModelRenderer21StudioCalcAttachmentsEv"));
+			if (ORIG_StudioCalcAttachments_Linux) {
+				EngineDevMsg("[client dll] Found StudioCalcAttachments_Linux at %p.\n", ORIG_StudioCalcAttachments_Linux);
+			} else {
+				EngineDevWarning("[client dll] Could not find StudioCalcAttachments.\n");
+				EngineWarning("[client dll] Special effects of weapons will be misplaced when bxt_viewmodel_fov is used.");
+			}
 		}
 	}
 
@@ -941,7 +929,7 @@ HOOK_DEF_3(ClientDLL, void, __cdecl, VectorTransform, float*, in1, float*, in2, 
 	}
 }
 
-HOOK_DEF_1(ClientDLL, void, __cdecl, StudioCalcAttachments, void*, thisptr)
+HOOK_DEF_2(ClientDLL, void, __fastcall, StudioCalcAttachments, void*, thisptr, int, edx)
 {
 	if (HwDLL::GetInstance().ORIG_studioapi_GetCurrentEntity)
 	{
@@ -949,7 +937,19 @@ HOOK_DEF_1(ClientDLL, void, __cdecl, StudioCalcAttachments, void*, thisptr)
 		if (currententity == pEngfuncs->GetViewModel() && HwDLL::GetInstance().NeedViewmodelAdjustments())
 			insideStudioCalcAttachmentsViewmodel = true;
 	}
-	ORIG_StudioCalcAttachments(thisptr);
+	ORIG_StudioCalcAttachments(thisptr, edx);
+	insideStudioCalcAttachmentsViewmodel = false;
+}
+
+HOOK_DEF_1(ClientDLL, void, __cdecl, StudioCalcAttachments_Linux, void*, thisptr)
+{
+	if (HwDLL::GetInstance().ORIG_studioapi_GetCurrentEntity)
+	{
+		auto currententity = HwDLL::GetInstance().ORIG_studioapi_GetCurrentEntity();
+		if (currententity == pEngfuncs->GetViewModel() && HwDLL::GetInstance().NeedViewmodelAdjustments())
+			insideStudioCalcAttachmentsViewmodel = true;
+	}
+	ORIG_StudioCalcAttachments_Linux(thisptr);
 	insideStudioCalcAttachmentsViewmodel = false;
 }
 
