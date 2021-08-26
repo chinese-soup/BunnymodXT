@@ -119,7 +119,8 @@ void ClientDLL::Hook(const std::wstring& moduleName, void* moduleHandle, void* m
 			ORIG_HUD_DrawTransparentTriangles, HOOKED_HUD_DrawTransparentTriangles,
 			ORIG_HUD_Key_Event, HOOKED_HUD_Key_Event,
 			ORIG_HUD_UpdateClientData, HOOKED_HUD_UpdateClientData,
-			ORIG_StudioCalcAttachments, HOOKED_StudioCalcAttachments);
+			ORIG_StudioCalcAttachments, HOOKED_StudioCalcAttachments,
+			ORIG_VectorTransform, HOOKED_VectorTransform);
 	}
 
 	// HACK: on Windows we don't get a LoadLibrary for SDL2, so when starting using the injector
@@ -146,7 +147,8 @@ void ClientDLL::Unhook()
 			ORIG_HUD_DrawTransparentTriangles,
 			ORIG_HUD_Key_Event,
 			ORIG_HUD_UpdateClientData,
-			ORIG_StudioCalcAttachments);
+			ORIG_StudioCalcAttachments,
+			ORIG_VectorTransform);
 	}
 
 	MemUtils::RemoveSymbolLookupHook(m_Handle, reinterpret_cast<void*>(ORIG_HUD_Init));
@@ -288,7 +290,7 @@ void ClientDLL::FindStuff()
 	{
 		auto pattern = fVectorTransform.get();
 		if (ORIG_VectorTransform) {
-			EngineDevMsg("[client dll] Found VectorTransform at %p (using %s pattern).\n", ORIG_StudioCalcAttachments, pattern->name());
+			EngineDevMsg("[client dll] Found VectorTransform at %p (using %s pattern).\n", ORIG_VectorTransform, pattern->name());
 		} else {
 			ORIG_VectorTransform = reinterpret_cast<_VectorTransform>(MemUtils::GetSymbolAddress(m_Handle, "VectorTransform"));
 			if (ORIG_VectorTransform) {
@@ -781,9 +783,6 @@ HOOK_DEF_1(ClientDLL, void, __cdecl, V_CalcRefdef, ref_params_t*, pparams)
 	last_viewforward = pparams->forward;
 	last_viewright = pparams->right;
 	last_viewup = pparams->up;
-
-	pEngfuncs->Con_Printf("ORIGIN = %f %f %f \n", last_vieworg[0], last_vieworg[1], last_vieworg[2]);
-	pEngfuncs->Con_Printf("forward = %f %f %f\n ", last_viewforward[0], last_viewforward[1], last_viewforward[2]);
 }
 
 HOOK_DEF_0(ClientDLL, void, __cdecl, HUD_Init)

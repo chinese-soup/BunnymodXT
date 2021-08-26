@@ -347,6 +347,13 @@ namespace patterns
 			"HL-NGHL",
 			"B8 28 54 01 00 E8 ?? ?? ?? ?? 8B 0D ?? ?? ?? ?? 53 8B 9C 24 30 54 01 00"
 		);
+
+		PATTERNS(studioapi_GetCurrentEntity,
+			"HL-SteamPipe",
+			"A1 ?? ?? ?? ?? C3 90 90 90 90 90 90 90 90 90 90 55 8B EC 8B 45 08 85 C0 7C 18",
+			"HL-4554",
+			"A1 ?? ?? ?? ?? C3 90 90 90 90 90 90 90 90 90 90 8B 44 24 04 85 C0 7C 17"
+		);
 	}
 
 	namespace server
@@ -500,7 +507,7 @@ namespace patterns
 	{
 		PATTERNS(VectorTransform,
 			"HL-4554",
-			"8B 44 24 ?? 8B 4C 24 ?? 8B 54 24 ?? D9 40 ??"
+			"8B 44 24 08 8B 4C 24 04 8B 54 24 0C D9 40 04 D8 49 04 D9 40 08 D8 49 08 DE C1 D9 01 D8 08 DE C1 D8 40 0CD9 1A D9 40 10 D8 09 D9 40 14 D8 49 04 DE C1 D9 40 18 D8 49 08 DE C1 D8 40 1C D9 5A 04 D9 40 20 D8 09 D9 40 24 D8 49 04 DE C1 D9 40 28 D8 49 08 DE C1 D8 40 2C D9 5A 08 C3 90 90 90 90 8B 44"
 		);
 
 		PATTERNS(StudioCalcAttachments,

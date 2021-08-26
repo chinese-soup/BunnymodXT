@@ -163,18 +163,6 @@ extern "C" void __cdecl SV_WriteEntitiesToClient(client_t* client, void* msg)
 {
 	HwDLL::HOOKED_SV_WriteEntitiesToClient(client, msg);
 }
-
-//extern "C" void __cdecl V_SetRefParams(void *header)
-/*extern "C" void __cdecl VectorTransform(const vec3_t in1, float* in2, vec3_t out)
-{
-	return HwDLL::HOOKED_VectorTransform(in1, in2, out);
-}*/
-
-//extern "C" void __cdecl V_SetRefParams(void *header)
-/*extern "C" int __cdecl studioapi_GetCurrentEntity()
-{
-	return HwDLL::HOOKED_studioapi_GetCurrentEntity();
-}*/
 #endif
 
 void HwDLL::Hook(const std::wstring& moduleName, void* moduleHandle, void* moduleBase, size_t moduleLength, bool needToIntercept)
@@ -293,7 +281,6 @@ void HwDLL::Hook(const std::wstring& moduleName, void* moduleHandle, void* modul
 			ORIG_SV_AddLinksToPM_, HOOKED_SV_AddLinksToPM_,
 			ORIG_SV_WriteEntitiesToClient, HOOKED_SV_WriteEntitiesToClient,
 			ORIG_VectorTransform, HOOKED_VectorTransform
-		//	ORIG_studioapi_GetCurrentEntity, HOOKED_studioapi_GetCurrentEntity
 		);
 	}
 }
@@ -682,6 +669,7 @@ void HwDLL::FindStuff()
 		FIND(CL_Record_f)
 		FIND(Key_Event)
 		FIND(Cmd_Exec_f)
+		FIND(studioapi_GetCurrentEntity)
 		#undef FIND
 
 		ORIG_Host_FilterTime = reinterpret_cast<_Host_FilterTime>(MemUtils::GetSymbolAddress(m_Handle, "Host_FilterTime"));

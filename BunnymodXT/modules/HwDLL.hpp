@@ -295,7 +295,6 @@ private:
 public:
 	typedef void(__cdecl *_Con_Printf) (const char* fmt, ...);
 	_Con_Printf ORIG_Con_Printf;
-	///*HOOK_DEF_0(HwDLL, cl_entity_t *, __cdecl, studioapi_GetCurrentEntity)
 	typedef cl_entity_t*(__cdecl *_studioapi_GetCurrentEntity) ();
 	_studioapi_GetCurrentEntity ORIG_studioapi_GetCurrentEntity;
 
