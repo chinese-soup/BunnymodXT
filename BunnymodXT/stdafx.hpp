@@ -58,6 +58,9 @@ using std::ptrdiff_t;
 #include "HLSDK/common/pmtrace.h"
 #include "HLSDK/common/event_api.h"
 #include "HLSDK/common/com_model.h"
+#include "HLSDK/common/cl_entity.h"
+#include "HLSDK/common/event_args.h"
+
 
 typedef int(*pfnUserMsgHook)(const char *pszName, int iSize, void *pbuf);
 #include "HLSDK/engine/cdll_int.h"

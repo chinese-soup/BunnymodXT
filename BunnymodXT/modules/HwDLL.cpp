@@ -669,7 +669,6 @@ void HwDLL::FindStuff()
 		FIND(CL_Record_f)
 		FIND(Key_Event)
 		FIND(Cmd_Exec_f)
-		FIND(studioapi_GetCurrentEntity)
 		#undef FIND
 
 		ORIG_Host_FilterTime = reinterpret_cast<_Host_FilterTime>(MemUtils::GetSymbolAddress(m_Handle, "Host_FilterTime"));
@@ -790,6 +789,7 @@ void HwDLL::FindStuff()
 		DEF_FUTURE(Key_Event)
 		DEF_FUTURE(SV_AddLinksToPM_)
 		DEF_FUTURE(SV_WriteEntitiesToClient)
+		DEF_FUTURE(studioapi_GetCurrentEntity)
 		#undef DEF_FUTURE
 
 		bool oldEngine = (m_Name.find(L"hl.exe") != std::wstring::npos);
@@ -1330,6 +1330,7 @@ void HwDLL::FindStuff()
 		GET_FUTURE(PF_GetPhysicsKeyValue);
 		GET_FUTURE(SV_AddLinksToPM_);
 		GET_FUTURE(SV_WriteEntitiesToClient);
+		GET_FUTURE(studioapi_GetCurrentEntity);
 
 		if (oldEngine) {
 			GET_FUTURE(LoadAndDecryptHwDLL);
