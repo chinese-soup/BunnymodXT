@@ -3,7 +3,6 @@
 #include "../sptlib-wrapper.hpp"
 #include <SPTLib/IHookableNameFilter.hpp>
 #include "../hud_custom.hpp"
-#include <HLSDK/common/event_args.h>
 
 class ClientDLL : public IHookableNameFilter
 {
@@ -23,7 +22,7 @@ class ClientDLL : public IHookableNameFilter
 	HOOK_DECL(void, __cdecl, HUD_DrawTransparentTriangles)
 	HOOK_DECL(int, __cdecl, HUD_Key_Event, int down, int keynum, const char* pszCurrentBinding)
 	HOOK_DECL(int, __cdecl, HUD_UpdateClientData, client_data_t* pcldata, float flTime)
-	HOOK_DECL(void, __fastcall, StudioCalcAttachments, void* thisptr, int edx)
+	HOOK_DECL(void, __fastcall, StudioCalcAttachments, void* thisptr)
 	HOOK_DECL(void, __cdecl, StudioCalcAttachments_Linux, void* thisptr)
 	HOOK_DECL(void, __cdecl, VectorTransform, float *in1, float *in2, float *out)
 	HOOK_DECL(void, __cdecl, EV_GetDefaultShellInfo, event_args_t *args, float *origin, float *velocity, float *ShellVelocity, float *ShellOrigin,

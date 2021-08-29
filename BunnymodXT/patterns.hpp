@@ -361,7 +361,9 @@ namespace patterns
 			"HL-SteamPipe",
 			"A1 ?? ?? ?? ?? C3 90 90 90 90 90 90 90 90 90 90 55 8B EC 8B 45 08 85 C0 7C 18",
 			"HL-4554",
-			"A1 ?? ?? ?? ?? C3 90 90 90 90 90 90 90 90 90 90 8B 44 24 04 85 C0 7C 17"
+			"A1 ?? ?? ?? ?? C3 90 90 90 90 90 90 90 90 90 90 8B 44 24 04 85 C0 7C 17",
+			"HL-NGHL",
+			"A1 ?? ?? ?? ?? C3 90 90 90 90 90 90 90 90 90 90 8B 4C 24 04 85 C9 7C 1B"
 		);
 
 		PATTERNS(R_DrawSkyBox,
@@ -533,14 +535,15 @@ namespace patterns
 
 	namespace client
 	{
-		PATTERNS(VectorTransform,
-			"HL-4554",
-			"8B 44 24 08 8B 4C 24 04 8B 54 24 0C D9 40 04 D8 49 04 D9 40 08 D8 49 08 DE C1 D9 01 D8 08 DE C1 D8 40 0CD9 1A D9 40 10 D8 09 D9 40 14 D8 49 04 DE C1 D9 40 18 D8 49 08 DE C1 D8 40 1C D9 5A 04 D9 40 20 D8 09 D9 40 24 D8 49 04 DE C1 D9 40 28 D8 49 08 DE C1 D8 40 2C D9 5A 08 C3 90 90 90 90 8B 44"
-		);
 
 		PATTERNS(StudioCalcAttachments,
-			"HL-4554",
+			"HL-WON",
 			"55 57 8B F9 8B 4F ?? 8B 91"
+		);
+
+		PATTERNS(EV_GetDefaultShellInfo,
+			"HL-WON",
+			"83 EC 10 53 55 56 57 8B 7C 24"
 		);
 	}
 

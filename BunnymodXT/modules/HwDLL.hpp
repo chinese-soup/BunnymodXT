@@ -5,7 +5,6 @@
 #include "../cvars.hpp"
 #include "taslogger/writer.hpp"
 #include "../input_editor.hpp"
-#include <HLSDK/common/cl_entity.h>
 
 enum class TASEditorMode {
 	DISABLED,
@@ -53,7 +52,6 @@ class HwDLL : public IHookableNameFilterOrdered
 	HOOK_DECL(void, __cdecl, SV_SetMoveVars)
 	HOOK_DECL(void, __cdecl, VectorTransform, const vec3_t in1, float* in2, vec3_t out)
 	//HOOK_DECL(void, __cdecl, VectorTransform, const vec3_t in1, float in2[3][4], vec3_t out)
-	//HOOK_DECL(cl_entity_t *, __cdecl, studioapi_GetCurrentEntity)
 
 	struct cmdbuf_t
 	{
@@ -152,10 +150,6 @@ public:
 	void GetViewangles(float* va);
 	void SetViewangles(float* va);
 
-	inline cl_entity_t* GetCurrentEntityFromStudioAPI()
-	{
-		return ORIG_studioapi_GetCurrentEntity();
-	}
 
 	inline bool NeedViewmodelAdjustments()
 	{

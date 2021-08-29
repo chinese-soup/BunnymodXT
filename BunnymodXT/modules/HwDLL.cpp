@@ -307,7 +307,7 @@ void HwDLL::Hook(const std::wstring& moduleName, void* moduleHandle, void* modul
 			ORIG_SV_WriteEntitiesToClient, HOOKED_SV_WriteEntitiesToClient,
 			ORIG_VGuiWrap_Paint, HOOKED_VGuiWrap_Paint,
 			ORIG_DispatchDirectUserMsg, HOOKED_DispatchDirectUserMsg,
-			ORIG_SV_SetMoveVars, HOOKED_SV_SetMoveVars
+			ORIG_SV_SetMoveVars, HOOKED_SV_SetMoveVars,
 			ORIG_SV_WriteEntitiesToClient, HOOKED_SV_WriteEntitiesToClient,
 			ORIG_VectorTransform, HOOKED_VectorTransform);
 		);
@@ -723,7 +723,6 @@ void HwDLL::FindStuff()
 		FIND(CL_Record_f)
 		FIND(Key_Event)
 		FIND(Cmd_Exec_f)
-		FIND(studioapi_GetCurrentEntity)
 		#undef FIND
 
 		ORIG_Host_FilterTime = reinterpret_cast<_Host_FilterTime>(MemUtils::GetSymbolAddress(m_Handle, "Host_FilterTime"));
@@ -871,6 +870,7 @@ void HwDLL::FindStuff()
 		DEF_FUTURE(SV_WriteEntitiesToClient)
 		DEF_FUTURE(VGuiWrap_Paint)
 		DEF_FUTURE(DispatchDirectUserMsg)
+		DEF_FUTURE(studioapi_GetCurrentEntity)
 		#undef DEF_FUTURE
 
 		bool oldEngine = (m_Name.find(L"hl.exe") != std::wstring::npos);
@@ -1433,6 +1433,7 @@ void HwDLL::FindStuff()
 		GET_FUTURE(SV_WriteEntitiesToClient);
 		GET_FUTURE(VGuiWrap_Paint);
 		GET_FUTURE(DispatchDirectUserMsg);
+		GET_FUTURE(studioapi_GetCurrentEntity);
 
 		if (oldEngine) {
 			GET_FUTURE(LoadAndDecryptHwDLL);
