@@ -50,6 +50,8 @@ class HwDLL : public IHookableNameFilterOrdered
 	HOOK_DECL(void, __cdecl, VGuiWrap_Paint, int paintAll)
 	HOOK_DECL(int, __cdecl, DispatchDirectUserMsg, char* pszName, int iSize, void* pBuf)
 	HOOK_DECL(void, __cdecl, SV_SetMoveVars)
+	HOOK_DECL(void, __cdecl, VectorTransform, float *in1, float *in2, float *out)
+	HOOK_DECL(void, __cdecl, R_StudioCalcAttachments)
 
 	struct cmdbuf_t
 	{
@@ -587,6 +589,7 @@ protected:
 	std::string execScript;
 	bool insideHost_Changelevel2_f;
 	bool dontStopAutorecord;
+	bool insideRStudioCalcAttachmentsViewmodel;
 
 	bool extendPlayerTraceDistanceLimit;
 };

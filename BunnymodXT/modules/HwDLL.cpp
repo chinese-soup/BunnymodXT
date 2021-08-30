@@ -183,6 +183,16 @@ extern "C" void __cdecl SV_SetMoveVars()
 {
 	HwDLL::HOOKED_SV_SetMoveVars();
 }
+
+extern "C" void __cdecl R_StudioCalcAttachments()
+{
+	HwDLL::HOOKED_R_StudioCalcAttachments();
+}
+
+extern "C" void __cdecl VectorTransform(float *in1, float *in2, float *out)
+{
+	HwDLL::HOOKED_VectorTransform(in1, in2, out);
+}
 #endif
 
 void HwDLL::Hook(const std::wstring& moduleName, void* moduleHandle, void* moduleBase, size_t moduleLength, bool needToIntercept)
@@ -271,6 +281,8 @@ void HwDLL::Hook(const std::wstring& moduleName, void* moduleHandle, void* modul
 			MemUtils::MarkAsExecutable(ORIG_VGuiWrap_Paint);
 			MemUtils::MarkAsExecutable(ORIG_DispatchDirectUserMsg);
 			MemUtils::MarkAsExecutable(ORIG_SV_SetMoveVars);
+			MemUtils::MarkAsExecutable(ORIG_R_StudioCalcAttachments);
+			MemUtils::MarkAsExecutable(ORIG_VectorTransform);
 		}
 
 		MemUtils::Intercept(moduleName,
@@ -307,7 +319,9 @@ void HwDLL::Hook(const std::wstring& moduleName, void* moduleHandle, void* modul
 			ORIG_SV_WriteEntitiesToClient, HOOKED_SV_WriteEntitiesToClient,
 			ORIG_VGuiWrap_Paint, HOOKED_VGuiWrap_Paint,
 			ORIG_DispatchDirectUserMsg, HOOKED_DispatchDirectUserMsg,
-			ORIG_SV_SetMoveVars, HOOKED_SV_SetMoveVars);
+			ORIG_SV_SetMoveVars, HOOKED_SV_SetMoveVars,
+			ORIG_VectorTransform, HOOKED_VectorTransform,
+			ORIG_R_StudioCalcAttachments, HOOKED_R_StudioCalcAttachments);
 	}
 }
 
@@ -350,7 +364,9 @@ void HwDLL::Unhook()
 			ORIG_SV_WriteEntitiesToClient,
 			ORIG_VGuiWrap_Paint,
 			ORIG_DispatchDirectUserMsg,
-			ORIG_SV_SetMoveVars);
+			ORIG_SV_SetMoveVars,
+			ORIG_VectorTransform,
+			ORIG_R_StudioCalcAttachments);
 	}
 
 	for (auto cvar : CVars::allCVars)
@@ -412,6 +428,8 @@ void HwDLL::Clear()
 	ORIG_DispatchDirectUserMsg = nullptr;
 	ORIG_SV_SetMoveVars = nullptr;
 	ORIG_studioapi_GetCurrentEntity = nullptr;
+	ORIG_R_StudioCalcAttachments = nullptr;
+	ORIG_VectorTransform = nullptr;
 
 	registeredVarsAndCmds = false;
 	autojump = false;
@@ -471,6 +489,7 @@ void HwDLL::Clear()
 	execScript.clear();
 	insideHost_Changelevel2_f = false;
 	dontStopAutorecord = false;
+	insideRStudioCalcAttachmentsViewmodel = false;
 	hltas_filename.clear();
 	newTASStartingCommand.clear();
 	newTASFilename.clear();
@@ -659,6 +678,24 @@ void HwDLL::FindStuff()
 			EngineDevMsg("[hw dll] Found SV_SetMoveVars at %p.\n", ORIG_SV_SetMoveVars);
 		else
 			EngineDevWarning("[hw dll] Could not find SV_SetMoveVars.\n");
+
+		ORIG_R_StudioCalcAttachments = reinterpret_cast<_R_StudioCalcAttachments>(MemUtils::GetSymbolAddress(m_Handle, "R_StudioCalcAttachments"));
+		if (ORIG_R_StudioCalcAttachments)
+			EngineDevMsg("[hw dll] Found R_StudioCalcAttachments at %p.\n", ORIG_R_StudioCalcAttachments);
+		else
+		{
+			EngineDevWarning("[hw dll] Could not find R_StudioCalcAttachments.\n");
+			EngineWarning("[hw dll] Weapon special effects will be misplaced when using bxt_viewmodel_fov.\n");
+		}
+
+		ORIG_VectorTransform = reinterpret_cast<_VectorTransform>(MemUtils::GetSymbolAddress(m_Handle, "VectorTransform"));
+		if (ORIG_VectorTransform)
+			EngineDevMsg("[hw dll] Found VectorTransform at %p.\n", ORIG_VectorTransform);
+		else
+		{
+			EngineDevWarning("[hw dll] Could not find VectorTransform.\n");
+			EngineWarning("[hw dll] Weapon special effects will be misplaced when using bxt_viewmodel_fov.\n");
+		}
 
 		ORIG_studioapi_GetCurrentEntity = reinterpret_cast<_studioapi_GetCurrentEntity>(MemUtils::GetSymbolAddress(m_Handle, "studioapi_GetCurrentEntity"));
 		if (ORIG_studioapi_GetCurrentEntity)
@@ -1188,6 +1225,15 @@ void HwDLL::FindStuff()
 			}
 		);
 
+		auto fR_StudioCalcAttachments = FindAsync(
+			ORIG_R_StudioCalcAttachments,
+			patterns::engine::R_StudioCalcAttachments,
+			[&](auto pattern) {
+				ORIG_VectorTransform = reinterpret_cast<_VectorTransform>(
+					*reinterpret_cast<uintptr_t*>(reinterpret_cast<uintptr_t>(ORIG_R_StudioCalcAttachments) + 106)
+					+ reinterpret_cast<uintptr_t>(ORIG_R_StudioCalcAttachments) + 110);
+			});
+
 		{
 			auto pattern = fCbuf_Execute.get();
 			if (ORIG_Cbuf_Execute) {
@@ -1349,6 +1395,17 @@ void HwDLL::FindStuff()
 				EngineDevMsg("[hw dll] Found movevars at %p.\n", movevars);
 			} else {
 				EngineDevWarning("[hw dll] Could not find SV_SetMoveVars.\n");
+			}
+		}
+
+		{
+			auto pattern = fR_StudioCalcAttachments.get();
+			if (ORIG_R_StudioCalcAttachments) {
+				EngineDevMsg("[hw dll] Found R_StudioCalcAttachments at %p (using the %s pattern).\n", ORIG_R_StudioCalcAttachments, pattern->name());
+				EngineDevMsg("[hw dll] Found VectorTransform at %p.\n", ORIG_VectorTransform);
+			} else {
+				EngineDevWarning("[hw dll] Could not find R_StudioCalcAttachments.\n");
+				EngineWarning("[client dll] Special effects of weapons will be misplaced when bxt_viewmodel_fov is used.\n");
 			}
 		}
 
@@ -4740,5 +4797,36 @@ HOOK_DEF_0(HwDLL, void, __cdecl, SV_SetMoveVars)
 			auto movevars_zmax = reinterpret_cast<float*>(reinterpret_cast<uintptr_t>(movevars) + offZmax);
 			*movevars_zmax = CVars::bxt_force_zmax.GetFloat();
 		}
+	}
+}
+
+HOOK_DEF_0(HwDLL, void, __cdecl, R_StudioCalcAttachments)
+{
+	const auto &cl = ClientDLL::GetInstance();
+
+	if (cl.pEngfuncs && ORIG_studioapi_GetCurrentEntity) {
+		auto currententity = ORIG_studioapi_GetCurrentEntity();
+		if (currententity == cl.pEngfuncs->GetViewModel() && NeedViewmodelAdjustments())
+			insideRStudioCalcAttachmentsViewmodel = true;
+	}
+	
+	ORIG_R_StudioCalcAttachments();
+	insideRStudioCalcAttachmentsViewmodel = false;
+}
+
+HOOK_DEF_3(HwDLL, void, __cdecl, VectorTransform, float*, in1, float*, in2, float*, out)
+{
+	// No need for a NeedViewmodelAdjustments() here since insideStudioCalcAttachmentsViewmodel is
+	// always FALSE from StudioCalcAttachments if we do NOT need the adjustments
+	if (insideRStudioCalcAttachmentsViewmodel == false)
+		ORIG_VectorTransform(in1, in2, out);
+	else
+	{
+		ORIG_VectorTransform(in1, in2, out);
+		Vector vOrigin(out);
+		ClientDLL::GetInstance().StudioAdjustViewmodelAttachments(vOrigin);
+		out[0] = vOrigin[0];
+		out[1] = vOrigin[1];
+		out[2] = vOrigin[2];
 	}
 }
