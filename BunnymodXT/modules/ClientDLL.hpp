@@ -51,6 +51,8 @@ public:
 	Vector last_viewright;
 	Vector last_viewup;
 
+	void StudioAdjustViewmodelAttachments(Vector &vOrigin);
+
 	unsigned short last_buttons;
 
 	// When set to false, the mouse won't move the camera.
@@ -86,6 +88,4 @@ protected:
 
 	bool insideKeyEvent;
 	bool insideStudioCalcAttachmentsViewmodel;
-
-	void StudioAdjustViewmodelAttachments(Vector &vOrigin);
 };

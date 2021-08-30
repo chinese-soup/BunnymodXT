@@ -357,15 +357,6 @@ namespace patterns
 			"B8 28 54 01 00 E8 ?? ?? ?? ?? 8B 0D ?? ?? ?? ?? 53 8B 9C 24 30 54 01 00"
 		);
 
-		PATTERNS(studioapi_GetCurrentEntity,
-			"HL-SteamPipe",
-			"A1 ?? ?? ?? ?? C3 90 90 90 90 90 90 90 90 90 90 55 8B EC 8B 45 08 85 C0 7C 18",
-			"HL-4554",
-			"A1 ?? ?? ?? ?? C3 90 90 90 90 90 90 90 90 90 90 8B 44 24 04 85 C0 7C 17",
-			"HL-NGHL",
-			"A1 ?? ?? ?? ?? C3 90 90 90 90 90 90 90 90 90 90 8B 4C 24 04 85 C9 7C 1B"
-		);
-
 		PATTERNS(R_DrawSkyBox,
 			"HL-SteamPipe",
 			"55 8B EC 83 EC 1C A1 ?? ?? ?? ?? 53 56",
@@ -383,6 +374,22 @@ namespace patterns
 		PATTERNS(SV_SetMoveVars,
 			"HL-SteamPipe",
 			"A1 ?? ?? ?? ?? 8B 0D ?? ?? ?? ?? 8B 15 ?? ?? ?? ?? A3 ?? ?? ?? ?? A1 ?? ?? ?? ?? 89 0D ?? ?? ?? ?? 8B 0D"
+		);
+
+		PATTERNS(studioapi_GetCurrentEntity,
+			"HL-SteamPipe",
+			"A1 ?? ?? ?? ?? C3 90 90 90 90 90 90 90 90 90 90 55 8B EC 8B 45 08 85 C0 7C 18",
+			"HL-4554",
+			"A1 ?? ?? ?? ?? C3 90 90 90 90 90 90 90 90 90 90 8B 44 24 04 85 C0 7C 17",
+			"HL-NGHL",
+			"A1 ?? ?? ?? ?? C3 90 90 90 90 90 90 90 90 90 90 8B 4C 24 04 85 C9 7C 1B",
+			"HL-WON-1712",
+			"A1 ?? ?? ?? ?? C3 90 90 90 90 90 90 90 90 90 90 8B 44 24 04 85 C0 7C 18"
+		);
+
+		PATTERNS(R_StudioCalcAttachments,
+			"HL-SteamPipe",
+			"8B 0D ?? ?? ?? ?? 83 B9 ?? ?? ?? ?? 04"
 		);
 	}
 
@@ -535,15 +542,18 @@ namespace patterns
 
 	namespace client
 	{
-
 		PATTERNS(StudioCalcAttachments,
 			"HL-WON",
-			"55 57 8B F9 8B 4F ?? 8B 91"
+			"55 57 8B F9 8B 4F ?? 8B 91",
+			"Echoes",
+			"55 8B EC 83 EC 0C 89 4D ?? 8B 45 ?? 8B 48 ?? 83 B9 ?? ?? ?? ?? 04"
 		);
 
 		PATTERNS(EV_GetDefaultShellInfo,
 			"HL-WON",
-			"83 EC 10 53 55 56 57 8B 7C 24"
+			"83 EC 10 53 55 56 57 8B 7C 24",
+			"Echoes",
+			"55 8B EC 83 EC 1C 56 8D 4D ?? E8 ?? ?? ?? ?? 8B 45"
 		);
 	}
 

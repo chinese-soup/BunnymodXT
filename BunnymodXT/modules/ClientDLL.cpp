@@ -286,9 +286,20 @@ void ClientDLL::FindStuff()
 		ORIG_StudioCalcAttachments,
 		patterns::client::StudioCalcAttachments,
 		[&](auto pattern) {
-			ORIG_VectorTransform = reinterpret_cast<_VectorTransform>(
-				*reinterpret_cast<uintptr_t*>(reinterpret_cast<uintptr_t>(ORIG_StudioCalcAttachments) + 101)
-				+ reinterpret_cast<uintptr_t>(ORIG_StudioCalcAttachments) + 105);
+			switch (pattern - patterns::client::StudioCalcAttachments.cbegin()) {
+			case 0: // HL-WON-1712
+				ORIG_VectorTransform = reinterpret_cast<_VectorTransform>(
+					*reinterpret_cast<uintptr_t*>(reinterpret_cast<uintptr_t>(ORIG_StudioCalcAttachments) + 101)
+					+ reinterpret_cast<uintptr_t>(ORIG_StudioCalcAttachments) + 105);
+				break;
+			case 1: // Echoes
+				ORIG_VectorTransform = reinterpret_cast<_VectorTransform>(
+					*reinterpret_cast<uintptr_t*>(reinterpret_cast<uintptr_t>(ORIG_StudioCalcAttachments) + 187)
+					+ reinterpret_cast<uintptr_t>(ORIG_StudioCalcAttachments) + 191);
+				break;
+			default:
+				assert(false);
+			}
 		});
 
 	auto fEV_GetDefaultShellInfo = FindAsync(ORIG_EV_GetDefaultShellInfo, patterns::client::EV_GetDefaultShellInfo);
@@ -472,13 +483,13 @@ void ClientDLL::FindStuff()
 	{
 		auto pattern = fEV_GetDefaultShellInfo.get();
 		if (ORIG_EV_GetDefaultShellInfo) {
-			EngineDevMsg("[client dll] Found EV_GetDefaultShellInfo at %p (using %s pattern).\n", ORIG_EV_GetDefaultShellInfo, pattern->name());
+			EngineDevMsg("[client dll] Found EV_GetDefaultShellInfo at %p (using the %s pattern).\n", ORIG_EV_GetDefaultShellInfo, pattern->name());
 		} else {
 			ORIG_EV_GetDefaultShellInfo = reinterpret_cast<_EV_GetDefaultShellInfo>(MemUtils::GetSymbolAddress(m_Handle, "_Z22EV_GetDefaultShellInfoP12event_args_sPfS1_S1_S1_S1_S1_S1_fff"));
 			if (ORIG_EV_GetDefaultShellInfo) {
 				EngineDevMsg("[client dll] Found EV_GetDefaultShellInfo at %p.\n", ORIG_EV_GetDefaultShellInfo);
 			} else {
-				EngineDevWarning("[client dll] Could not find StudioCalcAttachments.\n");
+				EngineDevWarning("[client dll] Could not find EV_GetDefaultShellInfo.\n");
 				EngineWarning("[client dll] Special effects of weapons will be misplaced when bxt_viewmodel_fov is used.\n");
 			}
 		}
@@ -487,7 +498,7 @@ void ClientDLL::FindStuff()
 	{
 		auto pattern = fStudioCalcAttachments.get();
 		if (ORIG_StudioCalcAttachments) {
-			EngineDevMsg("[client dll] Found StudioCalcAttachment at %p (using %s pattern).\n", ORIG_StudioCalcAttachments, pattern->name());
+			EngineDevMsg("[client dll] Found StudioCalcAttachment at %p (using the %s pattern).\n", ORIG_StudioCalcAttachments, pattern->name());
 			if (ORIG_VectorTransform)
 				EngineDevMsg("[client dll] Found VectorTransform at %p.\n", ORIG_VectorTransform);
 		} else {
@@ -961,7 +972,7 @@ HOOK_DEF_3(ClientDLL, void, __cdecl, VectorTransform, float*, in1, float*, in2, 
 
 HOOK_DEF_1(ClientDLL, void, __fastcall, StudioCalcAttachments, void*, thisptr)
 {
-	if (HwDLL::GetInstance().ORIG_studioapi_GetCurrentEntity)
+	if (pEngfuncs && HwDLL::GetInstance().ORIG_studioapi_GetCurrentEntity)
 	{
 		auto currententity = HwDLL::GetInstance().ORIG_studioapi_GetCurrentEntity();
 		if (currententity == pEngfuncs->GetViewModel() && HwDLL::GetInstance().NeedViewmodelAdjustments())
@@ -973,7 +984,7 @@ HOOK_DEF_1(ClientDLL, void, __fastcall, StudioCalcAttachments, void*, thisptr)
 
 HOOK_DEF_1(ClientDLL, void, __cdecl, StudioCalcAttachments_Linux, void*, thisptr)
 {
-	if (HwDLL::GetInstance().ORIG_studioapi_GetCurrentEntity)
+	if (pEngfuncs && HwDLL::GetInstance().ORIG_studioapi_GetCurrentEntity)
 	{
 		auto currententity = HwDLL::GetInstance().ORIG_studioapi_GetCurrentEntity();
 		if (currententity == pEngfuncs->GetViewModel() && HwDLL::GetInstance().NeedViewmodelAdjustments())
