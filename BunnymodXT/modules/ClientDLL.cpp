@@ -102,7 +102,6 @@ void ClientDLL::Hook(const std::wstring& moduleName, void* moduleHandle, void* m
 	MemUtils::AddSymbolLookupHook(moduleHandle, reinterpret_cast<void*>(ORIG_HUD_DrawTransparentTriangles), reinterpret_cast<void*>(HOOKED_HUD_DrawTransparentTriangles));
 	MemUtils::AddSymbolLookupHook(moduleHandle, reinterpret_cast<void*>(ORIG_HUD_Key_Event), reinterpret_cast<void*>(HOOKED_HUD_Key_Event));
 	MemUtils::AddSymbolLookupHook(moduleHandle, reinterpret_cast<void*>(ORIG_HUD_UpdateClientData), reinterpret_cast<void*>(HOOKED_HUD_UpdateClientData));
-	//MemUtils::AddSymbolLookupHook(moduleHandle, reinterpret_cast<void*>(ORIG_StudioCalcAttachments), reinterpret_cast<void*>(HOOKED_StudioCalcAttachments));
 
 	if (needToIntercept)
 	{
@@ -161,7 +160,6 @@ void ClientDLL::Unhook()
 	MemUtils::RemoveSymbolLookupHook(m_Handle, reinterpret_cast<void*>(ORIG_HUD_DrawTransparentTriangles));
 	MemUtils::RemoveSymbolLookupHook(m_Handle, reinterpret_cast<void*>(ORIG_HUD_Key_Event));
 	MemUtils::RemoveSymbolLookupHook(m_Handle, reinterpret_cast<void*>(ORIG_HUD_UpdateClientData));
-	//MemUtils::RemoveSymbolLookupHook(m_Handle, reinterpret_cast<void*>(ORIG_StudioCalcAttachments));
 
 	Clear();
 }
@@ -297,7 +295,6 @@ void ClientDLL::FindStuff()
 	ORIG_PM_ClipVelocity = reinterpret_cast<_PM_ClipVelocity>(MemUtils::GetSymbolAddress(m_Handle, "PM_ClipVelocity")); // For Linux.
 	ORIG_PM_WaterMove = reinterpret_cast<_PM_WaterMove>(MemUtils::GetSymbolAddress(m_Handle, "PM_WaterMove")); // For Linux.
 	ORIG_PM_Move = reinterpret_cast<_PM_Move>(MemUtils::GetSymbolAddress(m_Handle, "PM_Move")); // For Linux.
-
 
 	pEngfuncs = reinterpret_cast<cl_enginefunc_t*>(MemUtils::GetSymbolAddress(m_Handle, "gEngfuncs"));
 	if (pEngfuncs) {
@@ -510,28 +507,29 @@ bool ClientDLL::FindHUDFunctions()
 	if ((ORIG_HUD_Init = reinterpret_cast<_HUD_Init>(MemUtils::GetSymbolAddress(m_Handle, "HUD_Init")))) {
 		EngineDevMsg("[client dll] Found HUD_Init at %p.\n", ORIG_HUD_Init);
 	} else {
-		EngineDevWarning("[client dll] Could not HUD_Init.\n");
+		EngineDevWarning("[client dll] Could not find HUD_Init.\n");
 		return false;
 	}
 
 	if ((ORIG_HUD_VidInit = reinterpret_cast<_HUD_VidInit>(MemUtils::GetSymbolAddress(m_Handle, "HUD_VidInit")))) {
 		EngineDevMsg("[client dll] Found HUD_VidInit at %p.\n", ORIG_HUD_VidInit);
 	} else {
-		EngineDevWarning("[client dll] Could not HUD_VidInit.\n");
+		EngineDevWarning("[client dll] Could not find HUD_VidInit.\n");
 		return false;
 	}
 
 	if ((ORIG_HUD_Reset = reinterpret_cast<_HUD_Reset>(MemUtils::GetSymbolAddress(m_Handle, "HUD_Reset")))) {
 		EngineDevMsg("[client dll] Found HUD_Reset at %p.\n", ORIG_HUD_Reset);
 	} else {
-		EngineDevWarning("[client dll] Could not HUD_Reset.\n");
+		EngineDevWarning("[client dll] Could not find HUD_Reset.\n");
 		return false;
 	}
 
 	if ((ORIG_HUD_Redraw = reinterpret_cast<_HUD_Redraw>(MemUtils::GetSymbolAddress(m_Handle, "HUD_Redraw")))) {
 		EngineDevMsg("[client dll] Found HUD_Redraw at %p.\n", ORIG_HUD_Redraw);
 	} else {
-		EngineDevWarning("[client dll] Could not HUD_Redraw.\n");
+		EngineDevWarning("[client dll] Could not find HUD_Redraw.\n");
+		EngineWarning("bxt_disable_hud is not available.\n");
 		return false;
 	}
 
@@ -552,6 +550,7 @@ void ClientDLL::RegisterCVarsAndCommands()
 	if (ORIG_HUD_DrawTransparentTriangles && pEngfuncs) {
 		REG(bxt_show_triggers);
 		REG(bxt_show_custom_triggers);
+		REG(bxt_triggers_color);
 		REG(bxt_show_nodes);
 		REG(bxt_show_pickup_bbox);
 		REG(bxt_show_displacer_earth_targets);
@@ -612,6 +611,24 @@ void ClientDLL::RegisterCVarsAndCommands()
 		REG(bxt_hud_entities);
 		REG(bxt_hud_entities_offset);
 		REG(bxt_hud_entities_anchor);
+		REG(bxt_cross);
+		REG(bxt_cross_color);
+		REG(bxt_cross_alpha);
+		REG(bxt_cross_thickness);
+		REG(bxt_cross_size);
+		REG(bxt_cross_gap);
+		REG(bxt_cross_outline);
+		REG(bxt_cross_circle_radius);
+		REG(bxt_cross_dot_color);
+		REG(bxt_cross_dot_size);
+		REG(bxt_cross_top_line);
+		REG(bxt_cross_bottom_line);
+		REG(bxt_cross_left_line);
+		REG(bxt_cross_right_line);
+	}
+
+	if (ORIG_HUD_Redraw) {
+		REG(bxt_disable_hud);
 	}
 	#undef REG
 }
@@ -822,7 +839,8 @@ HOOK_DEF_0(ClientDLL, void, __cdecl, HUD_Reset)
 
 HOOK_DEF_2(ClientDLL, void, __cdecl, HUD_Redraw, float, time, int, intermission)
 {
-	ORIG_HUD_Redraw(time, intermission);
+	if (!CVars::bxt_disable_hud.GetBool())
+		ORIG_HUD_Redraw(time, intermission);
 
 	CustomHud::Draw(time);
 }

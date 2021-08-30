@@ -121,12 +121,15 @@ namespace CVars
 	extern CVarWrapper bxt_autopause;
 	extern CVarWrapper bxt_interprocess_enable;
 	extern CVarWrapper bxt_fade_remove;
+	extern CVarWrapper bxt_skybox_remove;
 	extern CVarWrapper bxt_stop_demo_on_changelevel;
 	extern CVarWrapper bxt_tas_editor_simulate_for_ms;
 	extern CVarWrapper bxt_tas_norefresh_until_last_frames;
 	extern CVarWrapper bxt_tas_write_log;
 	extern CVarWrapper bxt_tas_playback_speed;
 	extern CVarWrapper bxt_viewmodel_fov;
+	extern CVarWrapper bxt_disable_vgui;
+	extern CVarWrapper bxt_force_zmax;
 
 	extern CVarWrapper con_color;
 	extern CVarWrapper sv_cheats;
@@ -154,11 +157,13 @@ namespace CVars
 	extern CVarWrapper bxt_disable_changelevel;
 
 	// Clientside CVars
+	extern CVarWrapper bxt_disable_hud;
 	extern CVarWrapper bxt_autojump_prediction;
 	extern CVarWrapper bxt_bhopcap_prediction;
 	extern CVarWrapper bxt_show_nodes;
 	extern CVarWrapper bxt_show_displacer_earth_targets;
 	extern CVarWrapper bxt_show_custom_triggers;
+	extern CVarWrapper bxt_triggers_color;
 	extern CVarWrapper bxt_wallhack;
 	extern CVarWrapper bxt_wallhack_additive;
 	extern CVarWrapper bxt_wallhack_alpha;
@@ -219,6 +224,20 @@ namespace CVars
 	extern CVarWrapper bxt_hud_entities;
 	extern CVarWrapper bxt_hud_entities_offset;
 	extern CVarWrapper bxt_hud_entities_anchor;
+	extern CVarWrapper bxt_cross;
+	extern CVarWrapper bxt_cross_color;
+	extern CVarWrapper bxt_cross_alpha;
+	extern CVarWrapper bxt_cross_thickness;
+	extern CVarWrapper bxt_cross_size;
+	extern CVarWrapper bxt_cross_gap;
+	extern CVarWrapper bxt_cross_outline;
+	extern CVarWrapper bxt_cross_circle_radius;
+	extern CVarWrapper bxt_cross_dot_color;
+	extern CVarWrapper bxt_cross_dot_size;
+	extern CVarWrapper bxt_cross_top_line;
+	extern CVarWrapper bxt_cross_bottom_line;
+	extern CVarWrapper bxt_cross_left_line;
+	extern CVarWrapper bxt_cross_right_line;
 
 	extern const std::vector<CVarWrapper*> allCVars;
 }

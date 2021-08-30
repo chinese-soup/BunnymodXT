@@ -57,6 +57,11 @@ extern "C" int __cdecl V_FadeAlpha()
 	return HwDLL::HOOKED_V_FadeAlpha();
 }
 
+extern "C" void __cdecl R_DrawSkyBox()
+{
+	return HwDLL::HOOKED_R_DrawSkyBox();
+}
+
 extern "C" void __cdecl SCR_UpdateScreen()
 {
 	return HwDLL::HOOKED_SCR_UpdateScreen();
@@ -163,6 +168,21 @@ extern "C" void __cdecl SV_WriteEntitiesToClient(client_t* client, void* msg)
 {
 	HwDLL::HOOKED_SV_WriteEntitiesToClient(client, msg);
 }
+
+extern "C" void __cdecl VGuiWrap_Paint(int paintAll)
+{
+	HwDLL::HOOKED_VGuiWrap_Paint(paintAll);
+}
+
+extern "C" int __cdecl DispatchDirectUserMsg(char* pszName, int iSize, void* pBuf)
+{
+	return HwDLL::HOOKED_DispatchDirectUserMsg(pszName, iSize, pBuf);
+}
+
+extern "C" void __cdecl SV_SetMoveVars()
+{
+	HwDLL::HOOKED_SV_SetMoveVars();
+}
 #endif
 
 void HwDLL::Hook(const std::wstring& moduleName, void* moduleHandle, void* moduleBase, size_t moduleLength, bool needToIntercept)
@@ -230,6 +250,7 @@ void HwDLL::Hook(const std::wstring& moduleName, void* moduleHandle, void* modul
 			MemUtils::MarkAsExecutable(ORIG_SCR_BeginLoadingPlaque);
 			MemUtils::MarkAsExecutable(ORIG_Host_FilterTime);
 			MemUtils::MarkAsExecutable(ORIG_V_FadeAlpha);
+			MemUtils::MarkAsExecutable(ORIG_R_DrawSkyBox);
 			MemUtils::MarkAsExecutable(ORIG_SCR_UpdateScreen);
 			MemUtils::MarkAsExecutable(ORIG_SV_SpawnServer);
 			MemUtils::MarkAsExecutable(ORIG_SV_Frame);
@@ -247,6 +268,9 @@ void HwDLL::Hook(const std::wstring& moduleName, void* moduleHandle, void* modul
 			MemUtils::MarkAsExecutable(ORIG_Mod_LeafPVS);
 			MemUtils::MarkAsExecutable(ORIG_SV_AddLinksToPM_);
 			MemUtils::MarkAsExecutable(ORIG_SV_WriteEntitiesToClient);
+			MemUtils::MarkAsExecutable(ORIG_VGuiWrap_Paint);
+			MemUtils::MarkAsExecutable(ORIG_DispatchDirectUserMsg);
+			MemUtils::MarkAsExecutable(ORIG_SV_SetMoveVars);
 		}
 
 		MemUtils::Intercept(moduleName,
@@ -263,6 +287,7 @@ void HwDLL::Hook(const std::wstring& moduleName, void* moduleHandle, void* modul
 			ORIG_SCR_BeginLoadingPlaque, HOOKED_SCR_BeginLoadingPlaque,
 			ORIG_Host_FilterTime, HOOKED_Host_FilterTime,
 			ORIG_V_FadeAlpha, HOOKED_V_FadeAlpha,
+			ORIG_R_DrawSkyBox, HOOKED_R_DrawSkyBox,
 			ORIG_SCR_UpdateScreen, HOOKED_SCR_UpdateScreen,
 			ORIG_SV_SpawnServer, HOOKED_SV_SpawnServer,
 			ORIG_SV_Frame, HOOKED_SV_Frame,
@@ -280,8 +305,9 @@ void HwDLL::Hook(const std::wstring& moduleName, void* moduleHandle, void* modul
 			ORIG_Mod_LeafPVS, HOOKED_Mod_LeafPVS,
 			ORIG_SV_AddLinksToPM_, HOOKED_SV_AddLinksToPM_,
 			ORIG_SV_WriteEntitiesToClient, HOOKED_SV_WriteEntitiesToClient,
-			ORIG_VectorTransform, HOOKED_VectorTransform
-		);
+			ORIG_VGuiWrap_Paint, HOOKED_VGuiWrap_Paint,
+			ORIG_DispatchDirectUserMsg, HOOKED_DispatchDirectUserMsg,
+			ORIG_SV_SetMoveVars, HOOKED_SV_SetMoveVars);
 	}
 }
 
@@ -304,6 +330,7 @@ void HwDLL::Unhook()
 			ORIG_SCR_BeginLoadingPlaque,
 			ORIG_Host_FilterTime,
 			ORIG_V_FadeAlpha,
+			ORIG_R_DrawSkyBox,
 			ORIG_SCR_UpdateScreen,
 			ORIG_SV_SpawnServer,
 			ORIG_SV_Frame,
@@ -321,7 +348,9 @@ void HwDLL::Unhook()
 			ORIG_Mod_LeafPVS,
 			ORIG_SV_AddLinksToPM_,
 			ORIG_SV_WriteEntitiesToClient,
-			ORIG_VectorTransform);
+			ORIG_VGuiWrap_Paint,
+			ORIG_DispatchDirectUserMsg,
+			ORIG_SV_SetMoveVars);
 	}
 
 	for (auto cvar : CVars::allCVars)
@@ -343,6 +372,7 @@ void HwDLL::Clear()
 	ORIG_SCR_BeginLoadingPlaque = nullptr;
 	ORIG_Host_FilterTime = nullptr;
 	ORIG_V_FadeAlpha = nullptr;
+	ORIG_R_DrawSkyBox = nullptr;
 	ORIG_SCR_UpdateScreen = nullptr;
 	ORIG_SV_Frame = nullptr;
 	ORIG_SV_SpawnServer = nullptr;
@@ -378,7 +408,9 @@ void HwDLL::Clear()
 	ORIG_Mod_LeafPVS = nullptr;
 	ORIG_SV_AddLinksToPM_ = nullptr;
 	ORIG_SV_WriteEntitiesToClient = nullptr;
-	ORIG_VectorTransform = nullptr;
+	ORIG_VGuiWrap_Paint = nullptr;
+	ORIG_DispatchDirectUserMsg = nullptr;
+	ORIG_SV_SetMoveVars = nullptr;
 	ORIG_studioapi_GetCurrentEntity = nullptr;
 
 	registeredVarsAndCmds = false;
@@ -410,6 +442,8 @@ void HwDLL::Clear()
 	cmd_text = nullptr;
 	host_frametime = nullptr;
 	cvar_vars = nullptr;
+	movevars = nullptr;
+	offZmax = 0;
 	frametime_remainder = nullptr;
 	framesTillExecuting = 0;
 	executing = false;
@@ -589,6 +623,13 @@ void HwDLL::FindStuff()
 		else
 			EngineDevWarning("[hw dll] Could not find cvar_vars.\n");
 
+		movevars = MemUtils::GetSymbolAddress(m_Handle, "movevars");
+		if (movevars) {
+			EngineDevMsg("[hw dll] Found movevars at %p.\n", movevars);
+			offZmax = 0x38;
+		} else
+			EngineDevWarning("[hw dll] Could not find movevars.\n");
+
 		ORIG_hudGetViewAngles = reinterpret_cast<_hudGetViewAngles>(MemUtils::GetSymbolAddress(m_Handle, "hudGetViewAngles"));
 		if (ORIG_hudGetViewAngles)
 			EngineDevMsg("[hw dll] Found hudGetViewAngles at %p.\n", ORIG_hudGetViewAngles);
@@ -613,14 +654,11 @@ void HwDLL::FindStuff()
 		else
 			EngineDevWarning("[hw dll] Could not find SV_WriteEntitiesToClient.\n");
 
-		ORIG_VectorTransform = reinterpret_cast<_VectorTransform>(MemUtils::GetSymbolAddress(m_Handle, "VectorTransform"));
-		if (ORIG_VectorTransform)
-			EngineDevMsg("[hw dll] Found VectorTransform at %p.\n", ORIG_VectorTransform);
+		ORIG_SV_SetMoveVars = reinterpret_cast<_SV_SetMoveVars>(MemUtils::GetSymbolAddress(m_Handle, "SV_SetMoveVars"));
+		if (ORIG_SV_SetMoveVars)
+			EngineDevMsg("[hw dll] Found SV_SetMoveVars at %p.\n", ORIG_SV_SetMoveVars);
 		else
-		{
-			EngineDevWarning("[hw dll] Could not find VectorTransform.\n");
-			EngineWarning("[hw dll] Weapon special effects will be misplaced when using bxt_viewmodel_fov.\n");
-		}
+			EngineDevWarning("[hw dll] Could not find SV_SetMoveVars.\n");
 
 		ORIG_studioapi_GetCurrentEntity = reinterpret_cast<_studioapi_GetCurrentEntity>(MemUtils::GetSymbolAddress(m_Handle, "studioapi_GetCurrentEntity"));
 		if (ORIG_studioapi_GetCurrentEntity)
@@ -631,7 +669,7 @@ void HwDLL::FindStuff()
 			EngineWarning("[hw dll] Weapon special effects will be misplaced when using bxt_viewmodel_fov.\n");
 		}
 
-		if (!cls || !sv || !svs || !svmove || !ppmove || !host_client || !sv_player || !sv_areanodes || !cmd_text || !cmd_alias || !host_frametime || !cvar_vars || !ORIG_hudGetViewAngles || !ORIG_SV_AddLinksToPM)
+		if (!cls || !sv || !svs || !svmove || !ppmove || !host_client || !sv_player || !sv_areanodes || !cmd_text || !cmd_alias || !host_frametime || !cvar_vars || !movevars || !ORIG_hudGetViewAngles || !ORIG_SV_AddLinksToPM || !ORIG_SV_SetMoveVars)
 			ORIG_Cbuf_Execute = nullptr;
 
 		#define FIND(f) \
@@ -682,6 +720,14 @@ void HwDLL::FindStuff()
 			EngineDevMsg("[hw dll] Found V_FadeAlpha at %p.\n", ORIG_V_FadeAlpha);
 		else
 			EngineDevWarning("[hw dll] Could not find V_FadeAlpha.\n");
+
+		ORIG_R_DrawSkyBox = reinterpret_cast<_R_DrawSkyBox>(MemUtils::GetSymbolAddress(m_Handle, "R_DrawSkyBox"));
+		if (ORIG_R_DrawSkyBox) {
+			EngineDevMsg("[hw dll] Found R_DrawSkyBox at %p.\n", ORIG_R_DrawSkyBox);
+		} else {
+			EngineDevWarning("[hw dll] Could not find R_DrawSkyBox.\n");
+			EngineWarning("bxt_skybox_remove is not available.\n");
+		}
 
 		ORIG_SCR_UpdateScreen = reinterpret_cast<_SCR_UpdateScreen>(MemUtils::GetSymbolAddress(m_Handle, "SCR_UpdateScreen"));
 		if (ORIG_SCR_UpdateScreen)
@@ -747,6 +793,22 @@ void HwDLL::FindStuff()
 			EngineWarning("bxt_novis has no effect.\n");
 		}
 
+		ORIG_VGuiWrap_Paint = reinterpret_cast<_VGuiWrap_Paint>(MemUtils::GetSymbolAddress(m_Handle, "VGuiWrap_Paint"));
+		if (ORIG_VGuiWrap_Paint) {
+			EngineDevMsg("[hw dll] Found VGuiWrap_Paint at %p.\n", ORIG_VGuiWrap_Paint);
+		} else {
+			EngineDevWarning("[hw dll] Could not find VGuiWrap_Paint.\n");
+			EngineWarning("bxt_disable_vgui has no effect.\n");
+		}
+
+		ORIG_DispatchDirectUserMsg = reinterpret_cast<_DispatchDirectUserMsg>(MemUtils::GetSymbolAddress(m_Handle, "DispatchDirectUserMsg"));
+		if (ORIG_DispatchDirectUserMsg) {
+			EngineDevMsg("[hw dll] Found DispatchDirectUserMsg at %p.\n", ORIG_DispatchDirectUserMsg);
+		} else {
+			EngineDevWarning("[hw dll] Could not find DispatchDirectUserMsg.\n");
+			EngineWarning("Demo crash fix in Counter-Strike: Condition Zero Deleted Scenes is not available.\n");
+		}
+
 		const auto CL_Move = reinterpret_cast<uintptr_t>(MemUtils::GetSymbolAddress(m_Handle, "CL_Move"));
 		if (CL_Move)
 		{
@@ -772,6 +834,7 @@ void HwDLL::FindStuff()
 		DEF_FUTURE(PM_PlayerTrace)
 		DEF_FUTURE(Host_FilterTime)
 		DEF_FUTURE(V_FadeAlpha)
+		DEF_FUTURE(R_DrawSkyBox)
 		DEF_FUTURE(SCR_UpdateScreen)
 		DEF_FUTURE(PF_GetPhysicsKeyValue)
 		DEF_FUTURE(build_number)
@@ -790,6 +853,8 @@ void HwDLL::FindStuff()
 		DEF_FUTURE(SV_AddLinksToPM_)
 		DEF_FUTURE(SV_WriteEntitiesToClient)
 		DEF_FUTURE(studioapi_GetCurrentEntity)
+		DEF_FUTURE(VGuiWrap_Paint)
+		DEF_FUTURE(DispatchDirectUserMsg)
 		#undef DEF_FUTURE
 
 		bool oldEngine = (m_Name.find(L"hl.exe") != std::wstring::npos);
@@ -1114,6 +1179,15 @@ void HwDLL::FindStuff()
 				}
 			});
 
+		auto fSV_SetMoveVars = FindAsync(
+			ORIG_SV_SetMoveVars,
+			patterns::engine::SV_SetMoveVars,
+			[&](auto pattern) {
+				movevars = *reinterpret_cast<void**>(reinterpret_cast<uintptr_t>(ORIG_SV_SetMoveVars) + 18);
+				offZmax = 0x38;
+			}
+		);
+
 		{
 			auto pattern = fCbuf_Execute.get();
 			if (ORIG_Cbuf_Execute) {
@@ -1268,6 +1342,16 @@ void HwDLL::FindStuff()
 			}
 		}
 
+		{
+			auto pattern = fSV_SetMoveVars.get();
+			if (ORIG_SV_SetMoveVars) {
+				EngineDevMsg("[hw dll] Found SV_SetMoveVars at %p (using the %s pattern).\n", ORIG_SV_SetMoveVars, pattern->name());
+				EngineDevMsg("[hw dll] Found movevars at %p.\n", movevars);
+			} else {
+				EngineDevWarning("[hw dll] Could not find SV_SetMoveVars.\n");
+			}
+		}
+
 		#define GET_FUTURE(future_name) \
 			{ \
 				auto pattern = f##future_name.get(); \
@@ -1319,6 +1403,7 @@ void HwDLL::FindStuff()
 			}
 		GET_FUTURE(Host_FilterTime);
 		GET_FUTURE(V_FadeAlpha);
+		GET_FUTURE(R_DrawSkyBox);
 		GET_FUTURE(SV_Frame);
 		GET_FUTURE(VGuiWrap2_ConDPrintf);
 		GET_FUTURE(VGuiWrap2_ConPrintf);
@@ -1330,6 +1415,8 @@ void HwDLL::FindStuff()
 		GET_FUTURE(PF_GetPhysicsKeyValue);
 		GET_FUTURE(SV_AddLinksToPM_);
 		GET_FUTURE(SV_WriteEntitiesToClient);
+		GET_FUTURE(VGuiWrap_Paint);
+		GET_FUTURE(DispatchDirectUserMsg);
 		GET_FUTURE(studioapi_GetCurrentEntity);
 
 		if (oldEngine) {
@@ -2853,11 +2940,13 @@ void HwDLL::RegisterCVarsAndCommandsIfNeeded()
 	RegisterCVar(CVars::bxt_bhopcap);
 	RegisterCVar(CVars::bxt_interprocess_enable);
 	RegisterCVar(CVars::bxt_fade_remove);
+	RegisterCVar(CVars::bxt_skybox_remove);
 	RegisterCVar(CVars::bxt_stop_demo_on_changelevel);
 	RegisterCVar(CVars::bxt_tas_editor_simulate_for_ms);
 	RegisterCVar(CVars::bxt_tas_norefresh_until_last_frames);
 	RegisterCVar(CVars::bxt_tas_write_log);
 	RegisterCVar(CVars::bxt_tas_playback_speed);
+	RegisterCVar(CVars::bxt_disable_vgui);
 	RegisterCVar(CVars::bxt_wallhack);
 	RegisterCVar(CVars::bxt_wallhack_additive);
 	RegisterCVar(CVars::bxt_wallhack_alpha);
@@ -2871,6 +2960,7 @@ void HwDLL::RegisterCVarsAndCommandsIfNeeded()
 	RegisterCVar(CVars::bxt_collision_depth_map_max_depth);
 	RegisterCVar(CVars::bxt_collision_depth_map_pixel_scale);
 	RegisterCVar(CVars::bxt_collision_depth_map_remove_distance_limit);
+	RegisterCVar(CVars::bxt_force_zmax);
 
 	if (ORIG_R_DrawViewModel)
 		RegisterCVar(CVars::bxt_viewmodel_fov);
@@ -3691,7 +3781,7 @@ void HwDLL::FindCVarsIfNeeded()
 HLStrafe::MovementVars HwDLL::GetMovementVars()
 {
 	auto vars = HLStrafe::MovementVars();
-	
+
 	FindCVarsIfNeeded();
 	vars.Frametime = GetFrameTime();
 	vars.Maxvelocity = CVars::sv_maxvelocity.GetFloat();
@@ -4330,6 +4420,14 @@ HOOK_DEF_0(HwDLL, int, __cdecl, V_FadeAlpha)
 		return ORIG_V_FadeAlpha();
 }
 
+HOOK_DEF_0(HwDLL, void, __cdecl, R_DrawSkyBox)
+{
+	if (CVars::sv_cheats.GetBool() && CVars::bxt_skybox_remove.GetBool())
+		return;
+
+	ORIG_R_DrawSkyBox();
+}
+
 HOOK_DEF_3(HwDLL, int, __cdecl, SV_SpawnServer, int, bIsDemo, char*, server, char*, startspot)
 {
 	auto ret = ORIG_SV_SpawnServer(bIsDemo, server, startspot);
@@ -4574,7 +4672,7 @@ HOOK_DEF_0(HwDLL, void, __cdecl, R_Clear)
 {
 	// This is needed or everything will look washed out or with unintended
 	// motion blur.
-	if (CVars::sv_cheats.GetBool() && CVars::bxt_wallhack.GetBool()) {
+	if (CVars::sv_cheats.GetBool() && (CVars::bxt_wallhack.GetBool() || CVars::bxt_skybox_remove.GetBool())) {
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 	}
@@ -4613,16 +4711,34 @@ HOOK_DEF_2(HwDLL, void, __cdecl, SV_WriteEntitiesToClient, client_t*, client, vo
 		*num_edicts = orig_num_edicts;
 }
 
-/*HOOK_DEF_0(HwDLL, cl_entity_t *, __cdecl, studioapi_GetCurrentEntity)
+HOOK_DEF_1(HwDLL, void, __cdecl, VGuiWrap_Paint, int, paintAll)
 {
-	return ORIG_studioapi_GetCurrentEntity();
-}*/
+	if (CVars::bxt_disable_vgui.GetBool()) {
+		ORIG_VGuiWrap_Paint(0);
+		return;
+	}
 
-HOOK_DEF_3(HwDLL, void, __cdecl, VectorTransform, const vec3_t, in1, float*, in2, vec3_t, out)
+	ORIG_VGuiWrap_Paint(paintAll);
+}
+
+HOOK_DEF_3(HwDLL, int, __cdecl, DispatchDirectUserMsg, char*, pszName, int, iSize, void*, pBuf)
 {
-	/*ORIG_Con_Printf("AHOJ JSEM V STUIDO SET HEADER\n");
-	int viewentity = ORIG_studioapi_GetCurrentEntity();
-	ORIG_Con_Printf("INTEGER %d\n", viewentity);*/
-	ORIG_Con_Printf("AHOJ VectorTransform\n");
-	return ORIG_VectorTransform(in1, in2, out);
+	const char *gameDir = ClientDLL::GetInstance().pEngfuncs->pfnGetGameDirectory();
+
+	if (!std::strcmp(gameDir, "czeror") && !std::strcmp(pszName, "InitHUD"))
+		return ORIG_DispatchDirectUserMsg(0, iSize, pBuf);
+	else
+		return ORIG_DispatchDirectUserMsg(pszName, iSize, pBuf);
+}
+
+HOOK_DEF_0(HwDLL, void, __cdecl, SV_SetMoveVars)
+{
+	ORIG_SV_SetMoveVars();
+
+	if (CVars::bxt_force_zmax.GetBool()) {
+		if (movevars && offZmax) {
+			auto movevars_zmax = reinterpret_cast<float*>(reinterpret_cast<uintptr_t>(movevars) + offZmax);
+			*movevars_zmax = CVars::bxt_force_zmax.GetFloat();
+		}
+	}
 }

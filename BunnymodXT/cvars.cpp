@@ -14,11 +14,14 @@ namespace CVars
 	CVarWrapper bxt_autopause("bxt_autopause", "0");
 	CVarWrapper bxt_interprocess_enable("bxt_interprocess_enable", "0");
 	CVarWrapper bxt_fade_remove("bxt_fade_remove", "0");
+	CVarWrapper bxt_skybox_remove("bxt_skybox_remove", "0");
 	CVarWrapper bxt_stop_demo_on_changelevel("bxt_stop_demo_on_changelevel", "0");
 	CVarWrapper bxt_tas_editor_simulate_for_ms("bxt_tas_editor_simulate_for_ms", "40");
 	CVarWrapper bxt_tas_norefresh_until_last_frames("bxt_tas_norefresh_until_last_frames", "0");
 	CVarWrapper bxt_tas_write_log("bxt_tas_write_log", "0");
 	CVarWrapper bxt_tas_playback_speed("bxt_tas_playback_speed", "1");
+	CVarWrapper bxt_disable_vgui("bxt_disable_vgui", "0");
+	CVarWrapper bxt_force_zmax("bxt_force_zmax", "0");
 	CVarWrapper bxt_viewmodel_fov("bxt_viewmodel_fov", "0");
 
 	CVarWrapper con_color;
@@ -47,11 +50,13 @@ namespace CVars
 	CVarWrapper bxt_disable_changelevel("bxt_disable_changelevel", "0");
 
 	// Clientside CVars
+	CVarWrapper bxt_disable_hud("bxt_disable_hud", "0");
 	CVarWrapper bxt_autojump_prediction("bxt_autojump_prediction", "0");
 	CVarWrapper bxt_bhopcap_prediction("bxt_bhopcap_prediction", "1");
 	CVarWrapper bxt_show_nodes("bxt_show_nodes", "0");
 	CVarWrapper bxt_show_displacer_earth_targets("bxt_show_displacer_earth_targets", "0");
 	CVarWrapper bxt_show_custom_triggers("bxt_show_custom_triggers", "1");
+	CVarWrapper bxt_triggers_color("bxt_triggers_color", "");
 	CVarWrapper bxt_wallhack("bxt_wallhack", "0");
 	CVarWrapper bxt_wallhack_additive("bxt_wallhack_additive", "0");
 	CVarWrapper bxt_wallhack_alpha("bxt_wallhack_alpha", "0.6");
@@ -112,6 +117,20 @@ namespace CVars
 	CVarWrapper bxt_hud_entities("bxt_hud_entities", "0");
 	CVarWrapper bxt_hud_entities_offset("bxt_hud_entities_offset", "");
 	CVarWrapper bxt_hud_entities_anchor("bxt_hud_entities_anchor", "0 0");
+	CVarWrapper bxt_cross("bxt_cross", "0");
+	CVarWrapper bxt_cross_color("bxt_cross_color", "");
+	CVarWrapper bxt_cross_alpha("bxt_cross_alpha", "");
+	CVarWrapper bxt_cross_thickness("bxt_cross_thickness", "2");
+	CVarWrapper bxt_cross_size("bxt_cross_size", "10");
+	CVarWrapper bxt_cross_gap("bxt_cross_gap", "3");
+	CVarWrapper bxt_cross_outline("bxt_cross_outline", "0");
+	CVarWrapper bxt_cross_circle_radius("bxt_cross_circle_radius", "0");
+	CVarWrapper bxt_cross_dot_color("bxt_cross_dot_color", "");
+	CVarWrapper bxt_cross_dot_size("bxt_cross_dot_size", "0");
+	CVarWrapper bxt_cross_top_line("bxt_cross_top_line", "1");
+	CVarWrapper bxt_cross_bottom_line("bxt_cross_bottom_line", "1");
+	CVarWrapper bxt_cross_left_line("bxt_cross_left_line", "1");
+	CVarWrapper bxt_cross_right_line("bxt_cross_right_line", "1");
 
 	const std::vector<CVarWrapper*> allCVars =
 	{
@@ -124,11 +143,14 @@ namespace CVars
 		&bxt_autopause,
 		&bxt_interprocess_enable,
 		&bxt_fade_remove,
+		&bxt_skybox_remove,
 		&bxt_stop_demo_on_changelevel,
 		&bxt_tas_editor_simulate_for_ms,
 		&bxt_tas_norefresh_until_last_frames,
 		&bxt_tas_write_log,
 		&bxt_tas_playback_speed,
+		&bxt_disable_vgui,
+		&bxt_force_zmax,
 		&bxt_viewmodel_fov,
 		&con_color,
 		&sv_cheats,
@@ -155,7 +177,9 @@ namespace CVars
 		&bxt_show_pickup_bbox,
 		&bxt_disable_autosave,
 		&bxt_disable_changelevel,
+		&bxt_disable_hud,
 		&bxt_show_custom_triggers,
+		&bxt_triggers_color,
 		&bxt_wallhack,
 		&bxt_wallhack_additive,
 		&bxt_wallhack_alpha,
@@ -216,6 +240,20 @@ namespace CVars
 		&bxt_hud_tas_editor_status_anchor,
 		&bxt_hud_entities,
 		&bxt_hud_entities_offset,
-		&bxt_hud_entities_anchor
+		&bxt_hud_entities_anchor,
+		&bxt_cross,
+		&bxt_cross_color,
+		&bxt_cross_alpha,
+		&bxt_cross_thickness,
+		&bxt_cross_size,
+		&bxt_cross_gap,
+		&bxt_cross_outline,
+		&bxt_cross_circle_radius,
+		&bxt_cross_dot_color,
+		&bxt_cross_dot_size,
+		&bxt_cross_top_line,
+		&bxt_cross_bottom_line,
+		&bxt_cross_left_line,
+		&bxt_cross_right_line
 	};
 }

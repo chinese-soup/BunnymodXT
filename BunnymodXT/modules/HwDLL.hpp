@@ -29,6 +29,7 @@ class HwDLL : public IHookableNameFilterOrdered
 	HOOK_DECL(void, __cdecl, SCR_BeginLoadingPlaque)
 	HOOK_DECL(int, __cdecl, Host_FilterTime, float timePassed)
 	HOOK_DECL(int, __cdecl, V_FadeAlpha)
+	HOOK_DECL(void, __cdecl, R_DrawSkyBox)
 	HOOK_DECL(void, __cdecl, SCR_UpdateScreen)
 	HOOK_DECL(void, __cdecl, SV_Frame)
 	HOOK_DECL(int, __cdecl, SV_SpawnServer, int bIsDemo, char* server, char* startspot)
@@ -46,8 +47,9 @@ class HwDLL : public IHookableNameFilterOrdered
 	HOOK_DECL(byte *, __cdecl, Mod_LeafPVS, mleaf_t *leaf, model_t *model)
 	HOOK_DECL(void, __cdecl, SV_AddLinksToPM_, void *node, float *pmove_mins, float *pmove_maxs)
 	HOOK_DECL(void, __cdecl, SV_WriteEntitiesToClient, client_t* client, void* msg)
-	HOOK_DECL(void, __cdecl, VectorTransform, const vec3_t in1, float* in2, vec3_t out)
-	//HOOK_DECL(void, __cdecl, VectorTransform, const vec3_t in1, float in2[3][4], vec3_t out)
+	HOOK_DECL(void, __cdecl, VGuiWrap_Paint, int paintAll)
+	HOOK_DECL(int, __cdecl, DispatchDirectUserMsg, char* pszName, int iSize, void* pBuf)
+	HOOK_DECL(void, __cdecl, SV_SetMoveVars)
 
 	struct cmdbuf_t
 	{
@@ -145,7 +147,6 @@ public:
 	bool TryGettingAccurateInfo(float origin[3], float velocity[3], float& health);
 	void GetViewangles(float* va);
 	void SetViewangles(float* va);
-
 
 	inline bool NeedViewmodelAdjustments()
 	{
@@ -434,6 +435,8 @@ protected:
 	int *demorecording;
 	cmdalias_t* cmd_alias;
 	cvar_t **cvar_vars;
+	void *movevars;
+	ptrdiff_t offZmax;
 
 	int framesTillExecuting;
 	bool executing;
