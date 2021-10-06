@@ -452,6 +452,9 @@ protected:
 
 	HLStrafe::PlayerData player;
 public:
+	int m_spriteTexture = 0;
+	int m_hsprLogo2 = 0;
+	cl_entity_s		m_VoiceHeadModels;
 	std::string hltas_filename;
 	HLTAS::Input input;
 	unsigned hlstrafe_version;

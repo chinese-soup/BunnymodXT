@@ -24,6 +24,11 @@ namespace CustomHud
 	static bool receivedAccurateInfo = false;
 	static playerinfo player;
 	bool countingTime = false;
+	bool addPenalty = false;
+	int randomAdInt = 0;
+	HSPRITE m_hsprLogo = 0;
+	HSPRITE m_hsprLogoBXT = 0;
+	HSPRITE m_hsprLogoWhopper = 0;
 	int hours = 0, minutes = 0, seconds = 0;
 	double timeRemainder = 0.0;
 	int frames = 0;
@@ -1226,16 +1231,28 @@ namespace CustomHud
 	}
 
 	float lastSpriteAd = 0.0f;
+	int adToShow = 0;
 	void DrawSpriteAds(float flTime)
 	{
 		if (lastSpriteAd > flTime)
 		{
 			//ClientDLL::GetInstance().pEngfuncs->Con_Printf("AHOJ JDEM FLTIME = %f | CL TIME = %f | SPRITE AD = %f", flTime, ClientDLL::GetInstance().pEngfuncs->GetClientTime(), lastSpriteAd );
-			HSPRITE m_hsprLogo = 0;
 
 			int x, y, i;
-			if (m_hsprLogo == 0)
-				m_hsprLogo = ClientDLL::GetInstance().pEngfuncs->pfnSPR_Load("sprites/bxt_trial.spr");
+			if (m_hsprLogoBXT == 0 && m_hsprLogoWhopper == 0)
+			{
+				m_hsprLogoBXT = ClientDLL::GetInstance().pEngfuncs->pfnSPR_Load("sprites/bxt_trial.spr");
+				m_hsprLogoWhopper = ClientDLL::GetInstance().pEngfuncs->pfnSPR_Load("sprites/whopper.spr");
+			}
+			if(randomAdInt % 2 == 0)
+			{
+				m_hsprLogo = m_hsprLogoBXT;
+			}
+			else
+			{
+				m_hsprLogo = m_hsprLogoWhopper;
+			}
+
 
 			ClientDLL::GetInstance().pEngfuncs->pfnSPR_Set(m_hsprLogo, 250, 250, 250);
 
@@ -1251,6 +1268,8 @@ namespace CustomHud
 		}
 		else
 		{
+			randomAdInt = std::rand();
+
 			lastSpriteAd = flTime; // if we changelevle flTime resets, so keep up with it lol lmao fuck this its for a meme video
 		}
 	}
@@ -1286,6 +1305,11 @@ namespace CustomHud
 		const auto previous_seconds = seconds;
 
 		frames++;
+		if(addPenalty)
+		{
+			timeRemainder += 5.0;
+			addPenalty = false;
+		}
 		timeRemainder += time;
 		seconds += static_cast<int>(timeRemainder);
 		timeRemainder -= static_cast<int>(timeRemainder);
@@ -1328,6 +1352,14 @@ namespace CustomHud
 			Interprocess::WriteTimerStart(GetTime());
 		}
 		countingTime = counting;
+	}
+
+	void SetPenalty(bool shouldAddPenalty)
+	{
+		if(shouldAddPenalty)
+		{
+			addPenalty = true;
+		}
 	}
 
 	void SendTimeUpdate() {

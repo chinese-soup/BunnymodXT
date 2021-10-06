@@ -23,6 +23,7 @@ namespace CustomHud
 	void TimePassed(double time);
 	void ResetTime();
 	void SetCountingTime(bool counting);
+	void SetPenalty(bool penalty);
 	void SendTimeUpdate();
 	void SaveTimeToDemo();
 	void SetLastSpriteAd(float time);

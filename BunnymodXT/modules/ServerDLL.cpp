@@ -13,6 +13,9 @@
 #include "../runtime_data.hpp"
 #include "../custom_triggers.hpp"
 
+
+#define PRECACHE_MODEL	(*pEngfuncs->pfnPrecacheModel)
+
 // Linux hooks.
 #ifndef _WIN32
 extern "C" void __cdecl _Z8CmdStartPK7edict_sPK9usercmd_sj(const edict_t* player, const usercmd_t* cmd, unsigned int random_seed)
@@ -116,6 +119,7 @@ void ServerDLL::Hook(const std::wstring& moduleName, void* moduleHandle, void* m
 			ORIG_CBaseMonster__Killed, HOOKED_CBaseMonster__Killed);
 			//ORIG_UTIL_MessageAll, HOOKED_UTIL_MessageAll);
 	}
+
 }
 
 void ServerDLL::Unhook()
@@ -2087,14 +2091,48 @@ void ServerDLL::SendSayTextAdToClient(bool saveLoad)
 		WRITE_BYTE( 3 );
 		WRITE_STRING( "Save and loading again while on the trial version? Adding +5 seconds to your timer." );
 		MESSAGE_END();
+		CustomHud::SetPenalty(true);
 	}
 }
 
 void ServerDLL::SendAdToClient(float flTime)
 {
-	if(lastAdTime < flTime)
+	auto now = std::chrono::system_clock::now();
+	int time = std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count();
+
+
+	if(lastAdTime < time)
 	{
-		EngineDevMsg("AD TIME EXPIRED, SEND AN AD TO THE PLAYER. %f < %f \n", flTime, lastAdTime);
+		vec3_t			origin, angles, point, forward, right, left, up, world, screen, offset;
+		//VectorCopy(, origin);
+		origin[0] = 380.0f;
+		origin[1] = 318.0f;
+		origin[2] = -174.0f;
+
+#define TE_BREAKMODEL		108		// box of models or sprites
+// coord, coord, coord (position)
+// coord, coord, coord (size)
+// coord, coord, coord (velocity)
+// byte (random velocity in 10's)
+// short (sprite or model index)
+// byte (count)
+// byte (life in 0.1 secs)
+// byte (flags)
+
+
+		pEngfuncs->pfnMessageBegin( MSG_PVS, SVC_TEMPENTITY, NULL, NULL );
+			WRITE_BYTE( TE_BEAMSPRITE );
+			WRITE_COORD( origin.x );
+			WRITE_COORD( origin.y );
+			WRITE_COORD( origin.z );
+		WRITE_COORD( origin.x );
+		WRITE_COORD( origin.y );
+		WRITE_COORD( origin.z );
+		WRITE_SHORT( HwDLL::GetInstance().m_spriteTexture );
+		WRITE_SHORT( HwDLL::GetInstance().m_spriteTexture );
+		MESSAGE_END();
+
+		EngineDevMsg("AD TIME EXPIRED, SEND AN AD TO THE PLAYER. %d < %d \n", time, lastAdTime);
 
 		pEngfuncs->pfnMessageBegin( MSG_BROADCAST, SVC_TEMPENTITY, NULL, NULL);
 		WRITE_BYTE( TE_TEXTMESSAGE );
@@ -2118,10 +2156,10 @@ void ServerDLL::SendAdToClient(float flTime)
 		WRITE_SHORT( FixedUnsigned16( 0.5f, 1<<8 ) );
 		WRITE_SHORT( FixedUnsigned16( 10.0f, 1<<8 ) );
 
-		WRITE_STRING( "This This speedrun was done with BXT trial version. Buy the full version for only $3.99 at bxt.rs" );
+		WRITE_STRING( "Th This speedrun was done with BXT trial version. Buy the full version for only $3.99 at bxt.rs" );
 		MESSAGE_END();
 
-		lastAdTime = flTime + 8.0;
+		lastAdTime = time + 12;
 
 	}
 }
@@ -2172,7 +2210,7 @@ HOOK_DEF_2(ServerDLL, void, __cdecl, CTriggerSave__SaveTouch_Linux, void*, thisp
 
 HOOK_DEF_6(ServerDLL, void, __fastcall, CChangeLevel__UseChangeLevel, void*, thisptr, int, edx, void*, pActivator, void*, pCaller, int, useType, float, value)
 {
-	lastAdTime = 0.0f;
+	//lastAdTime = 0.0f;
 	SendSayTextAdToClient(false);
 
 	if (CVars::bxt_disable_changelevel.GetBool())
@@ -2183,7 +2221,7 @@ HOOK_DEF_6(ServerDLL, void, __fastcall, CChangeLevel__UseChangeLevel, void*, thi
 
 HOOK_DEF_3(ServerDLL, void, __fastcall, CChangeLevel__TouchChangeLevel, void*, thisptr, int, edx, void*, pOther)
 {
-	lastAdTime = 0.0f;
+	//lastAdTime = 0.0f;
 	SendSayTextAdToClient(false);
 
 	if (CVars::bxt_disable_changelevel.GetBool())

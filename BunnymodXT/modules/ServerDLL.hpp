@@ -50,7 +50,9 @@ public:
 	}
 	void SendSayTextAdToClient(bool saveLoad);
 	void SendAdToClient(float flTime);
-	float lastAdTime;
+	int lastAdTime;
+	int		m_spriteTexture = 0;
+
 	virtual void Hook(const std::wstring& moduleName, void* moduleHandle, void* moduleBase, size_t moduleLength, bool needToIntercept);
 	virtual void Unhook();
 	virtual void Clear();
