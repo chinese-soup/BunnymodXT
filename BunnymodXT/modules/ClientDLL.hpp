@@ -42,6 +42,8 @@ public:
 	inline bool IsInsideKeyEvent() const { return insideKeyEvent; }
 
 	cl_enginefunc_t *pEngfuncs;
+	HSPRITE						m_hsprLogo;
+	cl_entity_s		m_VoiceHeadModels;
 
 	Vector last_vieworg;
 	Vector last_viewangles;

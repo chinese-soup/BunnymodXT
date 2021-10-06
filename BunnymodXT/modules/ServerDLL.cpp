@@ -2118,7 +2118,7 @@ void ServerDLL::SendAdToClient(float flTime)
 		WRITE_SHORT( FixedUnsigned16( 0.5f, 1<<8 ) );
 		WRITE_SHORT( FixedUnsigned16( 10.0f, 1<<8 ) );
 
-		WRITE_STRING( "This speedrun was done with BXT trial version. Buy the full version for only $3.99 at bxt.rs" );
+		WRITE_STRING( "This This speedrun was done with BXT trial version. Buy the full version for only $3.99 at bxt.rs" );
 		MESSAGE_END();
 
 		lastAdTime = flTime + 8.0;

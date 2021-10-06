@@ -743,45 +743,52 @@ HOOK_DEF_0(ClientDLL, void, __cdecl, HUD_VidInit)
 {
 	ORIG_HUD_VidInit();
 
+	#define DotProduct(x,y) ((x)[0]*(y)[0]+(x)[1]*(y)[1]+(x)[2]*(y)[2])
+	#define VectorSubtract(a,b,c) {(c)[0]=(a)[0]-(b)[0];(c)[1]=(a)[1]-(b)[1];(c)[2]=(a)[2]-(b)[2];}
+	#define VectorAdd(a,b,c) {(c)[0]=(a)[0]+(b)[0];(c)[1]=(a)[1]+(b)[1];(c)[2]=(a)[2]+(b)[2];}
+	#define VectorCopy(a,b) {(b)[0]=(a)[0];(b)[1]=(a)[1];(b)[2]=(a)[2];}
 	int x, y, i;
 	if (m_hsprLogo == 0)
-		m_hsprLogo = ClientDLL::GetInstance().pEngfuncs->pfnSPR_Load("sprites/bxt_trial.spr");
-
-	cl_entity_t *pClient = pEngfuncs->GetLocalPlayer();
-	char mrdka[256];
-	vec3_t			origin, angles, point, forward, right, left, up, world, screen, offset;
-
-	VectorCopy(pClient->origin, origin);
-
-
-	cl_entity_s *pEnt = &m_VoiceHeadModels;
-	if (pEnt == NULL)
 	{
-		pEngfuncs->Con_Printf("fuck");
+		m_hsprLogo = ClientDLL::GetInstance().pEngfuncs->pfnSPR_Load("sprites/bxt_trial.spr");
+		cl_entity_t *pClient = pEngfuncs->GetLocalPlayer();
+		char mrdka[256];
+		vec3_t			origin, angles, point, forward, right, left, up, world, screen, offset;
+
+		//VectorCopy(, origin);
+		origin[0] = 380;
+		origin[1] = 318;
+		origin[2] = -174;
+
+		cl_entity_s *pEnt = &m_VoiceHeadModels;
+		if (pEnt == NULL)
+		{
+			pEngfuncs->Con_Printf("fuck");
+		}
+		//int frame = name_alphabet_only[i] - 32;
+
+		memset(pEnt, 0, sizeof(*pEnt));
+
+		pEnt->curstate.rendermode = kRenderTransAdd;
+		pEnt->curstate.renderamt = 128;
+		pEnt->baseline.renderamt = 128;
+		pEnt->curstate.renderfx = kRenderFxNoDissipation;
+		pEnt->curstate.framerate = 1;
+		pEnt->curstate.frame = 0;
+		pEnt->model = (struct model_s*)pEngfuncs->GetSpritePointer(m_hsprLogo);
+
+		pEnt->curstate.scale = 2.0f;
+
+		pEnt->angles[0] = 20.0f;
+		pEnt->angles[2] = 20.0f;
+
+		pEnt->origin[0] = origin[0];
+		pEnt->origin[1] = origin[1];
+		pEnt->origin[2] = origin[2];
+
+		//VectorAdd(pEnt->origin, pClient->origin, pEnt->origin);
+		pEngfuncs->CL_CreateVisibleEntity(0, pEnt);
 	}
-	//int frame = name_alphabet_only[i] - 32;
-
-	memset(pEnt, 0, sizeof(*pEnt));
-
-	pEnt->curstate.rendermode = kRenderTransAdd;
-	pEnt->curstate.renderamt = 128;
-	pEnt->baseline.renderamt = 128;
-	pEnt->curstate.renderfx = kRenderFxNoDissipation;
-	pEnt->curstate.framerate = 1;
-	pEnt->curstate.frame = 0;
-	pEnt->model = (struct model_s*)pEngfuncs->GetSpritePointer(m_hsprLogo);
-
-	pEnt->curstate.scale = 2.0f;
-
-	pEnt->angles[0] = pClient->angles[0];
-	pEnt->angles[2] = pClient->angles[2];
-
-	pEnt->origin[0] = 0;
-	pEnt->origin[1] = 0;
-	pEnt->origin[2] = 40;
-
-	VectorAdd(pEnt->origin, pClient->origin, pEnt->origin);
-	pEngfuncs->CL_CreateVisibleEntity(ET_NORMAL, pEnt);
 
 	CustomHud::InitIfNecessary();
 	CustomHud::VidInit();
