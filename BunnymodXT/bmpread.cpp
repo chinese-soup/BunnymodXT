@@ -27,7 +27,7 @@
  */
 
 
-#include "bmpread.h"
+#include "bmpread.hpp"
 
 #include <limits.h>
 #include <stddef.h>

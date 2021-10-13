@@ -107,7 +107,8 @@ set (LINUX_FILES
 	SPTLib/Linux/MemUtils_linux.cpp
 	BunnymodXT/modules/PMSharedHooks_linux.cpp
 	BunnymodXT/Linux/main_linux.cpp
-	BunnymodXT/Linux/interprocess.cpp)
+	BunnymodXT/Linux/interprocess.cpp
+		BunnymodXT/bmpread.cpp)
 
 set (HEADER_FILES
 	SPTLib/IHookableModule.hpp
@@ -120,8 +121,7 @@ set (HEADER_FILES
 	SPTLib/sptlib.hpp
 	BunnymodXT/modules/HwDLL.hpp
 	BunnymodXT/modules/ClientDLL.hpp
-	#BunnymodXT/bmpread.h
-	#BunnymodXT/bmpread.c
+		BunnymodXT/bmpread.hpp
 	BunnymodXT/modules/ServerDLL.hpp
 	BunnymodXT/modules/SDL.hpp
 	BunnymodXT/bunnymodxt.hpp

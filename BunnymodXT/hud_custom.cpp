@@ -10,6 +10,7 @@
 #include <GL/gl.h>
 
 #include "modules/HwDLL.hpp"
+#include "bmpread.hpp"
 
 namespace CustomHud
 {
@@ -1204,6 +1205,7 @@ namespace CustomHud
 		DrawSpriteAds(flTime);
 		if (!CVars::bxt_hud.GetBool())
 			return;
+		glFlush();
 
 		UpdatePrecision();
 		UpdateColors();
@@ -1237,9 +1239,9 @@ namespace CustomHud
 		if (lastSpriteAd > flTime)
 		{
 			//ClientDLL::GetInstance().pEngfuncs->Con_Printf("AHOJ JDEM FLTIME = %f | CL TIME = %f | SPRITE AD = %f", flTime, ClientDLL::GetInstance().pEngfuncs->GetClientTime(), lastSpriteAd );
-
+			m_hsprLogo = ClientDLL::GetInstance().pEngfuncs->pfnSPR_Load("sprites/640hud1.spr");;
 			int x, y, i;
-			if (m_hsprLogoBXT == 0 && m_hsprLogoWhopper == 0)
+			/*if (m_hsprLogoBXT == 0 && m_hsprLogoWhopper == 0)
 			{
 				m_hsprLogoBXT = ClientDLL::GetInstance().pEngfuncs->pfnSPR_Load("sprites/bxt_trial.spr");
 				m_hsprLogoWhopper = ClientDLL::GetInstance().pEngfuncs->pfnSPR_Load("sprites/whopper.spr");
@@ -1251,10 +1253,75 @@ namespace CustomHud
 			else
 			{
 				m_hsprLogo = m_hsprLogoWhopper;
+			}*/
+			const char *path = "/home/unko/texture3.bmp";
+			bmpread_t bitmap;
+			unsigned int name2 = 0;
+			//std::unique_ptr<bmpread_t, decltype(&bmpread_free)> pbmp(&bitmap, bmpread_free);
+			//BMPREAD_TOP_DOWN
+			if(!bmpread(path, 0, &bitmap))
+			{
+				EngineDevMsg("lol nope");
 			}
 
+			int TEXTURE0_SGIS = GL_ASYNC_READ_PIXELS_SGIX;
+			int TEXTURE1_SGIS = GL_MAX_ASYNC_TEX_IMAGE_SGIX;
+			int TEXTURE2_SGIS = GL_MAX_ASYNC_DRAW_PIXELS_SGIX;
 
-			ClientDLL::GetInstance().pEngfuncs->pfnSPR_Set(m_hsprLogo, 250, 250, 250);
+			glPushMatrix();
+
+			glEnable(GL_BLEND);
+			glGenTextures(1, &name2);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+			glBindTexture(GL_TEXTURE_2D, name2);
+
+
+			//glLoadIdentity();
+			//glColorMask(true, false, true, true);
+			//glClear(GL_COLOR_BUFFER_BIT);
+
+			//glEnable(GL_TEXTURE_2D);
+			//glEnable(GL_BLEND);
+			//PFNGLACTIVETEXTUREARBPROC glSelectTextureSGIS;
+
+			//glSelectTextureSGIS = reinterpret_cast<decltype( glSelectTextureSGIS )>( SDL_GL_GetProcAddress( "glActiveTextureARB" ) );
+
+			//glSelectTextureSGIS( TEXTURE2_SGIS );
+			//glMatrixMode(GL_TEXTURE);
+
+			//glActiveTexture(GL_TEXTURE0);
+
+			glEnable(GL_TEXTURE_2D);
+			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+
+			glTexImage2D(GL_TEXTURE_2D, 0, ((bitmap.flags & BMPREAD_ALPHA) ? 4 : 3),
+			             bitmap.width, bitmap.height, 0,
+			             ((bitmap.flags & BMPREAD_ALPHA) ? GL_RGBA : GL_RGB),
+			             GL_UNSIGNED_BYTE, bitmap.data);
+
+
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+			//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+			for(int i=0; i < 2; i++)
+			{
+				EngineDevMsg("LOl %i\n", i);
+				glActiveTexture(GL_TEXTURE0 + i);
+				//gEngfuncs.Con_Printf("[i = %d] GL_TEXTURE0 + i = %d\n", i, GL_TEXTURE0 + i);
+
+				glBindTexture(GL_TEXTURE_2D, name2);
+			}
+			//glMatrixMode(GL_MODELVIEW);
+			//glDisable( GL_TEXTURE_2D );
+
+			//glSelectTextureSGIS( TEXTURE0_SGIS );
+
+			//glMatrixMode (GL_MODELVIEW);
+
+			ClientDLL::GetInstance().pEngfuncs->pfnSPR_Set(m_hsprLogo, 244, 244, 244);
 
 			x = ClientDLL::GetInstance().pEngfuncs->pfnSPR_Width(m_hsprLogo, 0);
 			x = si.iWidth - x;
@@ -1265,6 +1332,8 @@ namespace CustomHud
 			i = grgLogoFrame[iFrame] - 1;
 
 			ClientDLL::GetInstance().pEngfuncs->pfnSPR_DrawAdditive(i, x, y, NULL);
+			glPopMatrix();
+			glFlush();
 		}
 		else
 		{
