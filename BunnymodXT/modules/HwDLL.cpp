@@ -256,6 +256,11 @@ extern "C" char* __cdecl MD5_Print(unsigned char hash[16])
 {
 	return HwDLL::HOOKED_MD5_Print(hash);
 }
+
+extern "C" void ClientDLL_CalcRefdef(ref_params_s *pparams)
+{
+	return HwDLL::HOOKED_ClientDLL_CalcRefdef(pparams);
+}
 #endif
 
 void HwDLL::Hook(const std::wstring& moduleName, void* moduleHandle, void* moduleBase, size_t moduleLength, bool needToIntercept)
@@ -793,6 +798,15 @@ void HwDLL::FindStuff()
 		else
 		{
 			EngineDevWarning("[hw dll] Could not find VectorTransform.\n");
+			EngineWarning("[hw dll] Weapon special effects will be misplaced when using bxt_viewmodel_fov.\n");
+		}
+		
+		ORIG_ClientDLL_CalcRefdef = reinterpret_cast<_ClientDLL_CalcRefdef>(MemUtils::GetSymbolAddress(m_Handle, "ClientDLL_CalcRefdef"));
+		if (ORIG_ClientDLL_CalcRefdef)
+			EngineDevMsg("[hw dll] Found ClientDLL_CalcRefdef at %p.\n", ORIG_ClientDLL_CalcRefdef);
+		else
+		{
+			EngineDevWarning("[hw dll] Could not find ClientDLL_CalcRefdef.\n");
 			EngineWarning("[hw dll] Weapon special effects will be misplaced when using bxt_viewmodel_fov.\n");
 		}
 
@@ -5177,3 +5191,38 @@ HOOK_DEF_1(HwDLL, char*, __cdecl, MD5_Print, unsigned char*, hash)
 	return ORIG_MD5_Print(hash);
 }
 
+HOOK_DEF_1(HwDLL, void, __cdecl, ClientDLL_CalcRefdef, ref_params_s*, pparams)
+{
+	EngineDevMsg("AHOJ\n");
+
+	EngineDevMsg("[BEFORE] nextView is = %d\n", pparams->nextView);
+
+	if(pparams->nextView == 0)
+	{
+		pparams->nextView = 99;	// on further view
+
+		pparams->viewport[0] = 0;
+		pparams->viewport[1] = 0;
+		pparams->viewport[2] = 1280;
+		pparams->viewport[3] = 720;
+
+		EngineDevMsg("[SET] SETTING to = %d\n", pparams->nextView);
+	}
+	else if (pparams->nextView == 99)
+	{
+		pparams->simorg[0] = 79.0f;
+		pparams->simorg[1] = 317.0f;
+		pparams->simorg[2] = -189.0f;
+
+		pparams->viewport[0] = 0;
+		pparams->viewport[1] = 0;
+		pparams->viewport[2] = 320;
+		pparams->viewport[3] = 240;
+		EngineDevMsg("[AFTER] SETTING to = %d\n", pparams->nextView);
+		pparams->nextView = 0;
+	}
+
+	EngineDevMsg("[AFTER] nextView is = %d\n", pparams->nextView);
+
+	return ORIG_ClientDLL_CalcRefdef(pparams);
+}

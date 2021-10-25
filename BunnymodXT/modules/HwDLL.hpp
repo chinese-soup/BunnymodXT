@@ -62,6 +62,7 @@ class HwDLL : public IHookableNameFilterOrdered
 	HOOK_DECL(void, __cdecl, MD5Transform, unsigned int buf[4], unsigned int const in[16])
 	HOOK_DECL(int, __cdecl, MD5_Hash_File, unsigned char digest[16], char *pszFileName, int bUsefopen, int bSeed, unsigned int seed[4])
 	HOOK_DECL(char*, __cdecl, MD5_Print, unsigned char hash[16])
+	HOOK_DECL(void, __cdecl, ClientDLL_CalcRefdef, ref_params_s *pparams)
 
 	struct cmdbuf_t
 	{
