@@ -78,6 +78,7 @@ git_describe(GIT_TAG --tags)
 git_local_changes(GIT_LOCAL_CHANGES)
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/BunnymodXT/git_revision.cpp.in" "${CMAKE_CURRENT_BINARY_DIR}/BunnymodXT/git_revision.cpp" @ONLY)
 
+
 find_package (Boost 1.57.0 REQUIRED)
 include_directories (SYSTEM ${Boost_INCLUDE_DIR})
 
@@ -140,9 +141,21 @@ set (HEADER_FILES
 	BunnymodXT/TEA.hpp
 	BunnymodXT/runtime_data.hpp
 	BunnymodXT/input_editor.hpp
-	BunnymodXT/git_revision.hpp)
+	BunnymodXT/git_revision.hpp
+	BunnymodXT/utf8/checked.h
+	BunnymodXT/utf8/core.h
+	BunnymodXT/utf8/unchecked.h
+	BunnymodXT/utf8/utf8.h
+	BunnymodXT/twitch/libircclient.h
+	BunnymodXT/twitch/libirc_errors.h
+	BunnymodXT/twitch/libirc_events.h
+	BunnymodXT/twitch/libirc_options.h
+	BunnymodXT/twitch/libirc_rfcnumeric.h
+	BunnymodXT/twitch/twitch.h)
+
 
 set (SOURCE_FILES
+	BunnymodXT/twitch/twitch.cpp
 	SPTLib/IHookableModule.cpp
 	SPTLib/IHookableDirFilter.cpp
 	SPTLib/IHookableNameFilter.cpp
@@ -195,9 +208,10 @@ if (NOT MSVC)
 	endif ()
 endif ()
 
-target_link_libraries (BunnymodXT hltas-cpp hlstrafe taslogger)
+target_link_libraries (BunnymodXT hltas-cpp hlstrafe taslogger )
 if (NOT MSVC)
 	target_link_libraries (BunnymodXT pthread rt)
+	target_link_libraries(BunnymodXT /home/unko/repos/libircclient/src/libircclient.so)
 else()
 	add_dependencies (BunnymodXT MinHook)
 	target_link_libraries (BunnymodXT opengl32)

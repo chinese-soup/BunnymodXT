@@ -12,7 +12,14 @@
 #include "../triangle_drawing.hpp"
 #include <GL/gl.h>
 
+#include	"../twitch/twitch.h"
+
 // Linux hooks.
+
+std::thread twitch_thread;
+Twitch *twitch = 0;
+int sayTextUserMsg = 0;
+
 #ifndef _WIN32
 extern "C" void __cdecl HUD_Init()
 {
@@ -746,6 +753,35 @@ HOOK_DEF_0(ClientDLL, void, __cdecl, HUD_VidInit)
 {
 	ORIG_HUD_VidInit();
 
+
+	twitch = new Twitch();
+
+
+
+	twitch->OnConnected = [] {
+		EngineDevMsg("Connected to Twitch chat");
+	};
+	twitch->OnDisconnected = [] {
+		EngineDevMsg("Disconnected frm Twtch chat");
+
+	};
+	twitch->OnError = []( int errorCode, const std::string &error ) {
+		EngineDevMsg( "Twitch chat error %d: %s", errorCode, error.c_str() );
+	};
+
+	if ( twitch && twitch->status == TWITCH_DISCONNECTED && true ) {
+
+		//auto twitch_credentials = "chinese_soup"
+		auto login = "mrdat";
+		//auto password = "auth:q8fjhy5kl23t1839w005e1yqmq4kkq";
+		auto password = "";
+
+		EngineDevMsg( "Connecting to Twitch chat...");
+
+
+		twitch_thread = twitch->Connect( login, password );
+		twitch_thread.detach();
+	}
 	
 
 	CustomHud::InitIfNecessary();
@@ -782,8 +818,32 @@ HOOK_DEF_2(ClientDLL, void, __cdecl, HUD_Redraw, float, time, int, intermission)
 	             ((bitmap.flags & BMPREAD_ALPHA) ? GL_RGBA : GL_RGB),
 	             GL_UNSIGNED_BYTE, bitmap.data);
     */
+	auto &serverDLLInstance = ServerDLL::GetInstance();
 
+	if(twitch && twitch->status == TWITCH_CONNECTED)
+	{
+		for ( int i = 0; i < 10 && !twitch->messages.empty(); i++ ) {
 
+			auto twitchMessage = twitch->messages.front();
+			auto &message = twitchMessage.first;
+			auto &sender = twitchMessage.second;
+
+			twitch->messages.pop_front();
+
+			bool messageCanBeRelayed = true;
+
+			if ( messageCanBeRelayed ) {
+				std::string trimmedMessage = message.substr( 0, 192 - sender.size() - 2 );
+				//HwDLL::GetInstance().ORIG_Cbuf_InsertText(( "say " + sender + "|" + trimmedMessage + "\n").c_str() );
+
+				sayTextUserMsg = serverDLLInstance.pEngfuncs->pfnRegUserMsg("TextMsg", -1);
+				serverDLLInstance.pEngfuncs->pfnMessageBegin( MSG_ALL, sayTextUserMsg, NULL, NULL );
+					serverDLLInstance.pEngfuncs->pfnWriteByte( 3 );
+					serverDLLInstance.pEngfuncs->pfnWriteString( ( sender + "|" + trimmedMessage ).c_str() );
+				serverDLLInstance.pEngfuncs->pfnMessageEnd();
+			}
+		}
+	}
 	ORIG_HUD_Redraw(time, intermission);
 
 	CustomHud::Draw(time);
