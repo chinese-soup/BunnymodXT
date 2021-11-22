@@ -168,6 +168,7 @@ std::thread Twitch::Connect( const std::string &user, const std::string &passwor
 	return std::thread( [this, user, password] {
 		this->user = user;
 		//this->channel = "#" + user;
+		//this->channel = "#test.cz";
 		this->channel = "#test.cz";
 
 		irc_callbacks_t	callbacks;
@@ -191,6 +192,7 @@ std::thread Twitch::Connect( const std::string &user, const std::string &passwor
 
 		status = TWITCH_CONNECTING;
 
+		//if ( irc_connect( session, "irc.libera.chat", 6697, NULL, user.c_str(), user.c_str(), user.c_str() ) ) {
 		if ( irc_connect( session, "shitpost.bar", 6667, NULL, user.c_str(), user.c_str(), user.c_str() ) ) {
 		//if ( irc_connect( session, "irc.chat.twitch.tv", 6667, password.c_str(), user.c_str(), user.c_str(), user.c_str() ) ) {
 			OnError( irc_errno( session ), irc_strerror( irc_errno( session ) ) );

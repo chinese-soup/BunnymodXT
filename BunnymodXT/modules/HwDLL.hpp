@@ -6,6 +6,7 @@
 #include "taslogger/writer.hpp"
 #include "../input_editor.hpp"
 
+#include "../bmpread.hpp"
 enum class TASEditorMode {
 	DISABLED,
 	APPEND,
@@ -46,6 +47,8 @@ class HwDLL : public IHookableNameFilterOrdered
 	HOOK_DECL(byte *, __cdecl, Mod_LeafPVS, mleaf_t *leaf, model_t *model)
 	HOOK_DECL(void, __cdecl, SV_AddLinksToPM_, void *node, float *pmove_mins, float *pmove_maxs)
 	HOOK_DECL(void, __cdecl, SV_WriteEntitiesToClient, client_t* client, void* msg)
+	HOOK_DECL(int, __cdecl, GL_LoadTexture2, char *identifier, int textureType, int width, int height, void *data,
+	          qboolean mipmap, int iType, void *pPal, int filter)
 
 	struct cmdbuf_t
 	{
@@ -224,6 +227,12 @@ public:
 	typedef void(__cdecl *_Cbuf_InsertText) (const char* text);
 	_Cbuf_InsertText ORIG_Cbuf_InsertText;
 
+	typedef int(__cdecl *_VGUI2_DrawStringClient) (int x, int y, char *str, int r, int g, int b);
+	_VGUI2_DrawStringClient ORIG_VGUI2_DrawStringClient;
+
+
+
+
 	TASEditorMode tas_editor_mode;
 	EditedInput tas_editor_input;
 	bool tas_editor_delete_point;
@@ -280,6 +289,9 @@ public:
 	_Con_Printf ORIG_Con_Printf;
 
 	HLStrafe::PlayerData GetPlayerData();
+
+	bmpread_t bitmap;
+	bool textureLoadedSuccess = false;
 
 protected:
 	typedef void(__cdecl *_Cvar_RegisterVariable) (cvar_t* cvar);

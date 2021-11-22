@@ -12,13 +12,11 @@
 #include "../triangle_drawing.hpp"
 #include <GL/gl.h>
 
-#include	"../twitch/twitch.h"
 
 // Linux hooks.
 
 std::thread twitch_thread;
-Twitch *twitch = 0;
-int sayTextUserMsg = 0;
+int sayTextUserMsg2 = 0;
 
 #ifndef _WIN32
 extern "C" void __cdecl HUD_Init()
@@ -779,8 +777,8 @@ HOOK_DEF_0(ClientDLL, void, __cdecl, HUD_VidInit)
 		EngineDevMsg( "Connecting to Twitch chat...");
 
 
-		twitch_thread = twitch->Connect( login, password );
-		twitch_thread.detach();
+		//twitch_thread = twitch->Connect( login, password );
+		//twitch_thread.detach();
 	}
 	
 
@@ -820,6 +818,9 @@ HOOK_DEF_2(ClientDLL, void, __cdecl, HUD_Redraw, float, time, int, intermission)
     */
 	auto &serverDLLInstance = ServerDLL::GetInstance();
 
+	ORIG_HUD_Redraw(time, intermission);
+
+	CustomHud::Draw(time);
 	if(twitch && twitch->status == TWITCH_CONNECTED)
 	{
 		for ( int i = 0; i < 10 && !twitch->messages.empty(); i++ ) {
@@ -836,17 +837,19 @@ HOOK_DEF_2(ClientDLL, void, __cdecl, HUD_Redraw, float, time, int, intermission)
 				std::string trimmedMessage = message.substr( 0, 192 - sender.size() - 2 );
 				//HwDLL::GetInstance().ORIG_Cbuf_InsertText(( "say " + sender + "|" + trimmedMessage + "\n").c_str() );
 
-				sayTextUserMsg = serverDLLInstance.pEngfuncs->pfnRegUserMsg("TextMsg", -1);
-				serverDLLInstance.pEngfuncs->pfnMessageBegin( MSG_ALL, sayTextUserMsg, NULL, NULL );
+				sayTextUserMsg2 = serverDLLInstance.pEngfuncs->pfnRegUserMsg("TextMsg", -1);
+				serverDLLInstance.pEngfuncs->pfnMessageBegin( MSG_ALL, sayTextUserMsg2, NULL, NULL );
 					serverDLLInstance.pEngfuncs->pfnWriteByte( 3 );
-					serverDLLInstance.pEngfuncs->pfnWriteString( ( sender + "|" + trimmedMessage ).c_str() );
+					serverDLLInstance.pEngfuncs->pfnWriteString( ( "<" + sender + ">" + trimmedMessage ).c_str() );
 				serverDLLInstance.pEngfuncs->pfnMessageEnd();
+
+				// lol this lasts one frame ofc
+
+				HwDLL::GetInstance().ORIG_VGUI2_DrawStringClient(200, 250, (char*)( "<" + sender + ">" + trimmedMessage ).c_str(), 255, 255, 255);
 			}
 		}
 	}
-	ORIG_HUD_Redraw(time, intermission);
 
-	CustomHud::Draw(time);
 }
 
 HOOK_DEF_6(ClientDLL, void, __cdecl, HUD_PostRunCmd, local_state_s*, from, local_state_s*, to, usercmd_s*, cmd, int, runfuncs, double, time, unsigned int, random_seed)

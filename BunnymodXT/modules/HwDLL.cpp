@@ -21,11 +21,13 @@
 #include "../git_revision.hpp"
 #include "../custom_triggers.hpp"
 
+
 using namespace std::literals;
 
 // Linux hooks.
 #ifndef _WIN32
 #include <dlfcn.h>
+
 
 extern "C" void __cdecl Cbuf_Execute()
 {
@@ -163,7 +165,26 @@ extern "C" void __cdecl SV_WriteEntitiesToClient(client_t* client, void* msg)
 {
 	HwDLL::HOOKED_SV_WriteEntitiesToClient(client, msg);
 }
+
+typedef enum
+{
+	GLT_SYSTEM,
+	GLT_DECAL,
+	GLT_HUDSPRITE,
+	GLT_STUDIO,
+	GLT_WORLD,
+	GLT_SPRITE
+}
+GL_TEXTURETYPE;
+
+extern "C" int __cdecl GL_LoadTexture2(char *identifier, GL_TEXTURETYPE textureType,int width,int height,void *data, qboolean mipmap, int iType,void *pPal,int filter)
+{
+	//EngineDevMsg("%s %d \n", identifier, textureType);
+	HwDLL::HOOKED_GL_LoadTexture2(identifier, textureType, width, height, data, mipmap, iType, pPal, filter);
+}
 #endif
+
+int sayTextUserMsg = 0;
 
 void HwDLL::Hook(const std::wstring& moduleName, void* moduleHandle, void* moduleBase, size_t moduleLength, bool needToIntercept)
 {
@@ -375,6 +396,8 @@ void HwDLL::Clear()
 	ORIG_Mod_LeafPVS = nullptr;
 	ORIG_SV_AddLinksToPM_ = nullptr;
 	ORIG_SV_WriteEntitiesToClient = nullptr;
+	ORIG_VGUI2_DrawStringClient = nullptr;
+	ORIG_GL_LoadTexture2 = nullptr;
 
 	registeredVarsAndCmds = false;
 	autojump = false;
@@ -607,6 +630,19 @@ void HwDLL::FindStuff()
 			EngineDevMsg("[hw dll] Found SV_WriteEntitiesToClient at %p.\n", ORIG_SV_WriteEntitiesToClient);
 		else
 			EngineDevWarning("[hw dll] Could not find SV_WriteEntitiesToClient.\n");
+
+		ORIG_VGUI2_DrawStringClient = reinterpret_cast<_VGUI2_DrawStringClient>(MemUtils::GetSymbolAddress(m_Handle, "VGUI2_DrawStringClient"));
+		if (ORIG_VGUI2_DrawStringClient)
+			EngineDevMsg("[hw dll] Found VGUI2_DrawStringClient at %p.\n", ORIG_VGUI2_DrawStringClient);
+		else
+			EngineDevWarning("[hw dll] Could not find VGUI2_DrawStringClient.\n");
+
+		ORIG_GL_LoadTexture2 = reinterpret_cast<_GL_LoadTexture2>(MemUtils::GetSymbolAddress(m_Handle, "GL_LoadTexture2"));
+		if (ORIG_GL_LoadTexture2)
+			EngineDevMsg("[hw dll] Found GL_LoadTexture2 at %p.\n", ORIG_GL_LoadTexture2);
+		else
+			EngineDevWarning("[hw dll] Could not find GL_LoadTexture2.\n");
+
 
 		if (!cls || !sv || !svs || !svmove || !ppmove || !host_client || !sv_player || !sv_areanodes || !cmd_text || !cmd_alias || !host_frametime || !cvar_vars || !ORIG_hudGetViewAngles || !ORIG_SV_AddLinksToPM)
 			ORIG_Cbuf_Execute = nullptr;
@@ -3732,6 +3768,22 @@ HOOK_DEF_0(HwDLL, void, __cdecl, Cbuf_Execute)
 		ORIG_Con_Printf("Cbuf_Execute() #%u begin; cls.state: %d; sv.paused: %d; executing: %s; host_frametime: %f; buffer: %s\n", c, *state, *paused, (executing ? "true" : "false"), *host_frametime, buf.c_str());
 	}
 
+	std::string buf2(cmd_text->data, cmd_text->cursize);
+	if (std::strstr(buf2.c_str(), "say ") != nullptr)
+	{
+		EngineDevMsg("AHOJ %s\n", buf2.c_str());
+
+		buf2.replace(0, 4, "");
+		ClientDLL::GetInstance().twitch->SendChatMessage(buf2);
+		auto &serverDLLInstance = ServerDLL::GetInstance();
+
+		sayTextUserMsg = serverDLLInstance.pEngfuncs->pfnRegUserMsg("TextMsg", -1);
+		serverDLLInstance.pEngfuncs->pfnMessageBegin( MSG_ALL, sayTextUserMsg, NULL, NULL );
+		serverDLLInstance.pEngfuncs->pfnWriteByte( 3 );
+			serverDLLInstance.pEngfuncs->pfnWriteString( buf2.c_str() );
+		serverDLLInstance.pEngfuncs->pfnMessageEnd();
+	}
+
 	if (insideCbuf_Execute) {
 		ORIG_Cbuf_Execute();
 
@@ -4349,8 +4401,11 @@ HOOK_DEF_3(HwDLL, int, __cdecl, SV_SpawnServer, int, bIsDemo, char*, server, cha
 
 	if(m_spriteTexture == 0)
 	{
-		m_spriteTexture = efun->pfnPrecacheModel( "sprites/bxt_trial.spr" );;
+		m_spriteTexture = efun->pfnPrecacheModel( "sprites/bxt_trial.spr" );
 	}
+
+	// TODO: SOUP PLAY AG
+
 
 #define DotProduct(x,y) ((x)[0]*(y)[0]+(x)[1]*(y)[1]+(x)[2]*(y)[2])
 #define VectorSubtract(a,b,c) {(c)[0]=(a)[0]-(b)[0];(c)[1]=(a)[1]-(b)[1];(c)[2]=(a)[2]-(b)[2];}
@@ -4629,3 +4684,35 @@ HOOK_DEF_2(HwDLL, void, __cdecl, SV_WriteEntitiesToClient, client_t*, client, vo
 	if (CVars::_bxt_norefresh.GetBool())
 		*num_edicts = orig_num_edicts;
 }
+
+HOOK_DEF_9(HwDLL, int, __cdecl, GL_LoadTexture2, char*, identifier, int, textureType, int, width, int, height, void*, data,
+           qboolean, mipmap, int, iType, void*, pPal, int, filter)
+{
+	EngineDevMsg("identifier = %s | type = %d | filter = %d | iType = %d | mipmap = %i | wxh = %dx%d \n", identifier,
+			  textureType, filter, iType, mipmap, width, height);
+
+	//unsigned int name2 = 0;
+	//identifier = "lab1_w3";
+
+	const char *path = "/home/unko/texture4.bmp";
+	//textureLoadedSuccess =;
+	//std::unique_ptr<bmpread_t, decltype(&bmpread_free)> pbmp(&bitmap, bmpread_free);
+
+	//BMPREAD_TOP_DOWN
+	if(textureType != 4)
+	{
+		EngineDevMsg("lol nope: ");
+		return ORIG_GL_LoadTexture2(identifier, textureType, width, height, data, mipmap, iType, pPal, filter);
+	}
+	else if(!bmpread(path, 0, &bitmap)) {
+		EngineDevMsg("lol nope BRO: ");
+		return ORIG_GL_LoadTexture2(identifier, textureType, width, height, data, mipmap, iType, pPal, filter);
+	}
+	else
+	{
+		return ORIG_GL_LoadTexture2(identifier, textureType, 2, 2, bitmap.data, mipmap, iType, pPal, 0);
+	}
+}
+
+
+

@@ -1202,10 +1202,9 @@ namespace CustomHud
 		if (!ClientDLL::GetInstance().pEngfuncs->pDemoAPI->IsPlayingback())
 			ServerDLL::GetInstance().SendAdToClient(flTime);
 
-		DrawSpriteAds(flTime);
 		if (!CVars::bxt_hud.GetBool())
 			return;
-		glFlush();
+		DrawSpriteAds(flTime);
 
 		UpdatePrecision();
 		UpdateColors();
@@ -1239,8 +1238,7 @@ namespace CustomHud
 		if (lastSpriteAd > flTime)
 		{
 			//ClientDLL::GetInstance().pEngfuncs->Con_Printf("AHOJ JDEM FLTIME = %f | CL TIME = %f | SPRITE AD = %f", flTime, ClientDLL::GetInstance().pEngfuncs->GetClientTime(), lastSpriteAd );
-			m_hsprLogo = ClientDLL::GetInstance().pEngfuncs->pfnSPR_Load("sprites/640hud1.spr");;
-			int x, y, i;
+
 			/*if (m_hsprLogoBXT == 0 && m_hsprLogoWhopper == 0)
 			{
 				m_hsprLogoBXT = ClientDLL::GetInstance().pEngfuncs->pfnSPR_Load("sprites/bxt_trial.spr");
@@ -1270,45 +1268,74 @@ namespace CustomHud
 			int TEXTURE1_SGIS = GL_MAX_ASYNC_TEX_IMAGE_SGIX;
 			int TEXTURE2_SGIS = GL_MAX_ASYNC_DRAW_PIXELS_SGIX;*/
 
-			//glPushMatrix();
-
-				glEnable(GL_TEXTURE_2D);
-				glEnable(GL_BLEND);
-				glGenTextures(1, &name2);
-				glBindTexture(GL_TEXTURE_2D, name2);
-
+			ClientDLL::GetInstance().pEngfuncs->pTriAPI->RenderMode(kRenderTransTexture);
+			glEnable(GL_TEXTURE_2D);
+			glEnable(GL_BLEND);
+			glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 			glTexImage2D(GL_TEXTURE_2D, 0, ((bitmap.flags & BMPREAD_ALPHA) ? 4 : 3),
 			             bitmap.width, bitmap.height, 0,
-			             ((bitmap.flags & BMPREAD_ALPHA) ? GL_RGBA : GL_RGB),
+			             ((bitmap.flags & BMPREAD_ALPHA) ? GL_RGBA8 : GL_RGBA8),
 			             GL_UNSIGNED_BYTE, bitmap.data);
 
-				//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-				//glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+			glTexSubImage2D(
+					GL_TEXTURE_2D,
+					0,
+					500, 500,
+					512, 512,
+					GL_RGBA, GL_UNSIGNED_BYTE,
+					bitmap.data
+			);
+
+			glGenTextures(1, &name2);
+			glBindTexture(GL_TEXTURE_2D, name2);
+
+			//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			//glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
 
-				//glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-				//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-				//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			//glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+			//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-				// when texture area is small, bilinear filter the closest mipmap
-				glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST );
-				// when texture area is large, bilinear filter the first mipmap
-				glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-				glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
-				glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+			// when texture area is small, bilinear filter the closest mipmap
+			glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST );
+			// when texture area is large, bilinear filter the first mipmap
+			glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+			glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+			glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
 
-				// glRectf(100.0f, 100.0f, 300.0f, 300.0f);
+			glBegin(GL_QUADS);
+				glTexCoord2f(1.0,0.0);
+				glVertex2f(0.0f,0.0);
+				glTexCoord2f(0.0,0.0);
+				glVertex2f(0.0 + 300.0,0.0);
+				glTexCoord2f(0.1,1.0);
+				glVertex2f(0.0 + 300.0,0.0 + 300.0);
+				glTexCoord2f(1.0,1.0);
+				glVertex2f(0.0,0.0 + 300.0);
+			glEnd();
 
-				glBegin(GL_QUADS);
-					glTexCoord2f(0.0,0.0);
-					glVertex2f(100.0f,100.0);
-					glTexCoord2f(1.0,0);
-					glVertex2f(100.0+300,100.0);
-					glTexCoord2f(1.0,1.0);
-					glVertex2f(100.0+300.0,100.0+300.0);
-					glTexCoord2f(0,1.0);
-					glVertex2f(0.0,100.0-300.0);
-				glEnd();
+
+			/*    (*qglBegin)(7);
+    (*qglTexCoord2f)((GLfloat)pic[1].width,(GLfloat)pic[1].height);
+    (*qglVertex2f)((GLfloat)(float)x,(GLfloat)(float)y);
+    (*qglTexCoord2f)(*(GLfloat *)pic[1].data,(GLfloat)pic[1].height);
+    (*qglVertex2f)((GLfloat)(float)(pic->width + x),(GLfloat)(float)y);
+    (*qglTexCoord2f)(*(GLfloat *)pic[1].data,(GLfloat)pic[2].width);
+    (*qglVertex2f)((GLfloat)(float)(x + pic->width),(GLfloat)(float)(pic->height + y));
+    (*qglTexCoord2f)((GLfloat)pic[1].width,(GLfloat)pic[2].width);
+    (*qglVertex2f)((GLfloat)(float)x,(GLfloat)(float)(y + pic->height));
+    (*qglEnd)();
+                    /* WARNING: Could not recover jumptable at 0x*/
+
+			glBindTexture(GL_TEXTURE_2D, 0);
+			glDeleteTextures(1, &name2);
+
+			glFlush();
+			glDisable(GL_TEXTURE_2D);
+			glDisable(GL_BLEND);
+
 
 			////glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
@@ -1330,17 +1357,6 @@ namespace CustomHud
 
 			//glMatrixMode (GL_MODELVIEW);
 
-			/* ClientDLL::GetInstance().pEngfuncs->pfnSPR_Set(m_hsprLogo, 244, 244, 244);
-
-			x = ClientDLL::GetInstance().pEngfuncs->pfnSPR_Width(m_hsprLogo, 0);
-			x = si.iWidth - x;
-			y = ClientDLL::GetInstance().pEngfuncs->pfnSPR_Height(m_hsprLogo, 0) / 2;
-
-			// Draw the logo at 20 fps
-			int iFrame = (int) (flTime * 20) % 26;
-			i = grgLogoFrame[iFrame] - 1;
-
-			ClientDLL::GetInstance().pEngfuncs->pfnSPR_DrawAdditive(i, x, y, NULL);*/
 			//glPopMatrix();
 			//glFlush();
 

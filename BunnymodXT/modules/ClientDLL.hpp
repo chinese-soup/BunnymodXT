@@ -4,6 +4,8 @@
 #include <SPTLib/IHookableNameFilter.hpp>
 #include "../hud_custom.hpp"
 
+#include	"../twitch/twitch.h"
+
 class ClientDLL : public IHookableNameFilter
 {
 	HOOK_DECL(void, __cdecl, PM_Jump)
@@ -32,6 +34,8 @@ public:
 		static ClientDLL instance;
 		return instance;
 	}
+
+	Twitch *twitch = 0;
 
 	virtual void Hook(const std::wstring& moduleName, void* moduleHandle, void* moduleBase, size_t moduleLength, bool needToIntercept);
 	virtual void Unhook();

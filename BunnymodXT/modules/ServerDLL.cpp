@@ -72,6 +72,11 @@ extern "C" void __cdecl _Z18UTIL_HudMessageAllRK14hudtextparms_sPKc(void *textpa
 {
 	//return ServerDLL::HOOKED_UTIL_HudMessageAll(textparams, pMessage);
 }
+
+extern "C" void __cdecl Host_Say(edict_t *pEntity, int teamOnly)
+{
+	return ServerDLL::HOOKED_Host_Say(pEntity, teamOnly);
+}
 #endif
 
 void ServerDLL::Hook(const std::wstring& moduleName, void* moduleHandle, void* moduleBase, size_t moduleLength, bool needToIntercept)
@@ -185,6 +190,7 @@ void ServerDLL::Clear()
 	ORIG_CMultiManager__ManagerThink = nullptr;
 	ORIG_FireTargets_Linux = nullptr;
 	ORIG_AddToFullPack = nullptr;
+	ORIG_Host_Say = nullptr;
 	ORIG_CTriggerVolume__Spawn = nullptr;
 	ORIG_CTriggerVolume__Spawn_Linux = nullptr;
 	ORIG_CBasePlayer__ForceClientDllUpdate = nullptr;
@@ -776,6 +782,7 @@ void ServerDLL::FindStuff()
 	ORIG_CmdStart = reinterpret_cast<_CmdStart>(MemUtils::GetSymbolAddress(m_Handle, "_Z8CmdStartPK7edict_sPK9usercmd_sj"));
 	ORIG_AddToFullPack = reinterpret_cast<_AddToFullPack>(MemUtils::GetSymbolAddress(m_Handle, "_Z13AddToFullPackP14entity_state_siP7edict_sS2_iiPh"));
 	ORIG_ClientCommand = reinterpret_cast<_ClientCommand>(MemUtils::GetSymbolAddress(m_Handle, "_Z13ClientCommandP7edict_s"));
+	ORIG_Host_Say = reinterpret_cast<_Host_Say>(MemUtils::GetSymbolAddress(m_Handle, "Host_Say"));
 	//ORIG_UTIL_MessageAll = reinterpret_cast<_UTIL_MessageAll>(MemUtils::GetSymbolAddress(m_Handle, "_Z18UTIL_HudMessageAllRK14hudtextparms_sPKc"));
 	ORIG_PM_Move = reinterpret_cast<_PM_Move>(MemUtils::GetSymbolAddress(m_Handle, "PM_Move"));
 	if (ORIG_CmdStart && ORIG_AddToFullPack && ORIG_ClientCommand && ORIG_PM_Move) {
@@ -2228,4 +2235,12 @@ HOOK_DEF_3(ServerDLL, void, __fastcall, CChangeLevel__TouchChangeLevel, void*, t
 		return;
 
 	return ORIG_CChangeLevel__TouchChangeLevel(thisptr, edx, pOther);
+}
+
+
+HOOK_DEF_2(ServerDLL, void, __cdecl, Host_Say, edict_t*, pEntity, int, teamOnly)
+{
+	const char *bla = pEngfuncs->pfnCmd_Args();
+	EngineDevMsg("MRDAT %s", bla);
+	ORIG_Host_Say(pEntity, teamOnly);
 }
