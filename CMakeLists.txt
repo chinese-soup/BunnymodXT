@@ -127,6 +127,7 @@ set (HEADER_FILES
 	BunnymodXT/custom_triggers.hpp
 	BunnymodXT/cvars.hpp
 	BunnymodXT/hud_custom.hpp
+	BunnymodXT/ghost.hpp
 	BunnymodXT/interprocess.hpp
 	BunnymodXT/modules.hpp
 	BunnymodXT/patterns.hpp
@@ -157,6 +158,7 @@ set (SOURCE_FILES
 	BunnymodXT/custom_triggers.cpp
 	BunnymodXT/cvars.cpp
 	BunnymodXT/hud_custom.cpp
+	BunnymodXT/ghost.cpp
 	BunnymodXT/triangle_drawing.cpp
 	BunnymodXT/triangle_utils.cpp
 	BunnymodXT/opengl_utils.cpp

@@ -6,6 +6,7 @@
 #include "modules.hpp"
 
 #include "hud_custom.hpp"
+#include "ghost.hpp"
 
 namespace TriangleDrawing
 {
@@ -350,6 +351,35 @@ namespace TriangleDrawing
 		// If 0, it is invalid.
 		size_t other_frame;
 	};
+
+	static void DrawGhost(triangleapi_s *pTriAPI)
+	{
+		if(!CVars::bxt_ghost.GetBool()) return;
+		if(Ghost::ghost.entries.size() == 0) return;
+		
+		Interprocess::Time it = CustomHud::GetTime();
+
+		float realTime = 3600 * it.hours + 60 * it.minutes + it.seconds + (float)it.milliseconds/1000;
+
+		uint32_t n0 = Ghost::ghost.getInfo(realTime, "null");
+
+		glm::vec3 posv3 = Ghost::ghost.nodes[n0].position;
+		Vector pos = {posv3.x, posv3.y, posv3.z};
+
+		static int count = 0;
+		count++;
+		if(count == 100)
+		{
+
+			printf("Time: %f\nPos: %f, %f, %f\n", realTime, pos.x, pos.y, pos.z);
+			count = 0;
+		}
+
+		pTriAPI->RenderMode(kRenderTransAdd);
+		pTriAPI->CullFace(TRI_NONE);
+		pTriAPI->Color4f(0.722f, 0.0f, 0.341f, 1.0f);
+		TriangleUtils::DrawAACuboid(pTriAPI, pos, {pos.x+10, pos.y+10, pos.z+10});	
+	}
 
 	static void DrawTASEditor(triangleapi_s *pTriAPI)
 	{
@@ -1977,6 +2007,7 @@ namespace TriangleDrawing
 		DrawTriggers(pTriAPI);
 		DrawCustomTriggers(pTriAPI);
 		DrawAbsMinMax(pTriAPI);
+		DrawGhost(pTriAPI);
 
 		DrawTASEditor(pTriAPI);
 		ResetTASEditorCommands();

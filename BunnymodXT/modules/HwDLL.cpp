@@ -14,6 +14,7 @@
 #include "../patterns.hpp"
 #include "../cvars.hpp"
 #include "../hud_custom.hpp"
+#include "../ghost.hpp"
 #include "../interprocess.hpp"
 #include "../bunnymodxt.hpp"
 #include "../cmd_wrapper.hpp"
@@ -2400,6 +2401,16 @@ struct HwDLL::Cmd_BXT_Triggers_Add
 	}
 };
 
+struct HwDLL::Cmd_BXT_Ghost_Set
+{
+	USAGE("Usage: bxt_ghost_set <demo-prefix>\nPrepares a demo ghost");
+
+	static void handler(const char* prefix)
+	{
+		Ghost::ghost.set(prefix);
+	}
+};
+
 struct HwDLL::Cmd_BXT_Triggers_Place_Down
 {
 	NO_USAGE();
@@ -3336,6 +3347,7 @@ void HwDLL::RegisterCVarsAndCommandsIfNeeded()
 	wrapper::Add<Cmd_BXT_TAS_Jumpbug_Down, Handler<>, Handler<const char*>>("+bxt_tas_jumpbug");
 	wrapper::Add<Cmd_BXT_TAS_Jumpbug_Up, Handler<>, Handler<const char*>>("-bxt_tas_jumpbug");
 	wrapper::Add<Cmd_BXT_Triggers_Add, Handler<float, float, float, float, float, float>>("bxt_triggers_add");
+	wrapper::Add<Cmd_BXT_Ghost_Set, Handler<const char*>>("bxt_ghost_set");
 	wrapper::Add<Cmd_BXT_Triggers_Clear, Handler<>>("bxt_triggers_clear");
 	wrapper::Add<Cmd_BXT_Triggers_Delete, Handler<>, Handler<unsigned long>>("bxt_triggers_delete");
 	wrapper::Add<Cmd_BXT_Triggers_Export, Handler<const char*>>("bxt_triggers_export");

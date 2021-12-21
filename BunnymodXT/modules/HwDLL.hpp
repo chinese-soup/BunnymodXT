@@ -373,6 +373,7 @@ protected:
 	struct Cmd_BXT_TAS_Ducktap_Up;
 	struct Cmd_BXT_TAS_Jumpbug_Down;
 	struct Cmd_BXT_TAS_Jumpbug_Up;
+	struct Cmd_BXT_Ghost_Set;
 	struct Cmd_BXT_Triggers_Add;
 	struct Cmd_BXT_Triggers_Clear;
 	struct Cmd_BXT_Triggers_Delete;
