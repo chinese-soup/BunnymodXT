@@ -366,15 +366,6 @@ namespace TriangleDrawing
 		glm::vec3 posv3 = Ghost::ghost.nodes[n0].position;
 		Vector pos = {posv3.x, posv3.y, posv3.z};
 
-		static int count = 0;
-		count++;
-		if(count == 100)
-		{
-
-			printf("Time: %f\nPos: %f, %f, %f\n", realTime, pos.x, pos.y, pos.z);
-			count = 0;
-		}
-
 		pTriAPI->RenderMode(kRenderTransAdd);
 		pTriAPI->CullFace(TRI_NONE);
 		pTriAPI->Color4f(0.722f, 0.0f, 0.341f, 1.0f);

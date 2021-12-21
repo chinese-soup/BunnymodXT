@@ -120,18 +120,12 @@ namespace Ghost
             sprintf(input_name, "%s_%d.dem", prefix, dem);
             uint8_t *data = read_file(input_name);
             
-            if(data == NULL)
-            {
-                printf("Demos: %d\n", dem-1);
-                break;
-            } //end of demos
+            if(data == NULL) break; //end of demos
 
             process_demo(data, realTime);
 
             if(data) delete[] data;
         }
-
-        printf("Time: %f\n", realTime);
     }
 
     uint32_t Ghost::getInfo(float realTime, const char *mapName)
