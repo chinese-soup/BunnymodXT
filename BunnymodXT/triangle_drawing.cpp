@@ -358,18 +358,22 @@ namespace TriangleDrawing
 		if(Ghost::ghost.entries.size() == 0) return;
 		
 		Interprocess::Time it = CustomHud::GetTime();
-
+		
 		float realTime = 3600 * it.hours + 60 * it.minutes + it.seconds + (float)it.milliseconds/1000;
 
-		uint32_t n0 = Ghost::ghost.getInfo(realTime, "null");
+		uint32_t n0 = Ghost::ghost.getInfo(realTime, HwDLL::GetInstance().lastLoadedMap.c_str());
+
+		if(n0 == (uint32_t)-1) return;
 
 		glm::vec3 posv3 = Ghost::ghost.nodes[n0].position;
 		Vector pos = {posv3.x, posv3.y, posv3.z};
 
+		float s = 4;
+
 		pTriAPI->RenderMode(kRenderTransAdd);
 		pTriAPI->CullFace(TRI_NONE);
-		pTriAPI->Color4f(0.722f, 0.0f, 0.341f, 1.0f);
-		TriangleUtils::DrawAACuboid(pTriAPI, pos, {pos.x+10, pos.y+10, pos.z+10});	
+		pTriAPI->Color4f(1, 1, 1, 1.0f);
+		TriangleUtils::DrawAACuboid(pTriAPI, {pos.x-s, pos.y-s, pos.z-s}, {pos.x+s, pos.y+s, pos.z+s});	
 	}
 
 	static void DrawTASEditor(triangleapi_s *pTriAPI)

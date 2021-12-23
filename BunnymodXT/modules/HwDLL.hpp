@@ -618,7 +618,10 @@ protected:
 		POSTRESET
 	} resetState = ResetState::NORMAL;
 
+public:
 	std::string lastLoadedMap;
+
+private:
 	bool insideKeyEvent;
 	bool insideExec;
 	std::string execScript;

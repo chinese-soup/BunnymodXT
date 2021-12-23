@@ -1,5 +1,6 @@
 #include "ghost.hpp"
 #include <iostream>
+#include <stdlib.h>
 
 namespace Ghost
 {
@@ -105,14 +106,14 @@ namespace Ghost
         return str;
     }
 
-    bool Ghost::process_demo(uint8_t *data, float &t)
+    bool Ghost::process_demo(uint8_t *data, float &accumTime)
     {
         uint32_t offset = 0;
         DemoHeader header = READ<DemoHeader>(data, offset);
 
         GhostEntry entry;
         strcpy((char*)entry.mapName, (const char*)header.mapName);
-        entry.realTime = t;
+        entry.realTime = accumTime;
         entry.begin = nodes.size();
 
 
@@ -135,12 +136,15 @@ namespace Ghost
 
         offset = dir.offset;
 
+        float time = 0;
+    
         bool end = false;
         while(!end)
         {
             uint8_t type = READ<uint8_t>(data, offset);
-            float time = READ<float>(data, offset);
-            uint32_t frame = READ<uint32_t>(data, offset);
+            time = READ<float>(data, offset);
+            //uint32_t frame = READ<uint32_t>(data, offset);
+            offset += 4;
 
             switch(type)
             {
@@ -150,10 +154,11 @@ namespace Ghost
                     offset += 4;
                     vec3 position = READ<vec3>(data, offset);
                     offset += 48;
-                    float frameTime = READ<float>(data, offset);
-                    nodes.push_back({position, t});
-                    t += frameTime;
-                    offset += 396;
+                    offset += 40;
+                    vec3 origin = READ<vec3>(data, offset);
+                    nodes.push_back({origin, accumTime + time});
+                    
+                    offset += 348;
                     uint32_t frameDataLength = READ<uint32_t>(data, offset);
                     offset += frameDataLength;
                 }
@@ -176,7 +181,8 @@ namespace Ghost
                                     entry.mapName[i] = str[i+f+13];
                                     if(str[i+f+13] == ' ') entry.mapName[i] = 0;
                                 }
-                                entry.realTime = t;
+
+                                entry.realTime = accumTime+time;
                                 entry.begin = nodes.size();
                             }
                         }
@@ -203,6 +209,7 @@ namespace Ghost
             }
         }
 
+        accumTime += time;
         if(nodes.size() == 0) return false;
         entry.end = nodes.size()-1;
         entries.push_back(entry);
@@ -234,8 +241,6 @@ namespace Ghost
         if(nodes.size() < 1) return -1;
         if(entries.size() < 1) return -1;
 
-        static uint32_t lastEntry = -1;
-
         //binary search
         uint32_t e0 = 0;
         uint32_t e1 = entries.size()-1;
@@ -246,13 +251,7 @@ namespace Ghost
             if(realTime < midTime) e1 = mid; else e0 = mid;
         }
 
-        if(e0 != lastEntry)
-        {
-            printf("MAP_CHANGE: %s\n", entries[e0].mapName);
-            lastEntry = e0;
-        }
-
-        //if(0 != strcmp(mapName, entries[curEntry].mapName)) return false;
+        if(0 != strcmp(mapName, entries[e0].mapName)) return -1;
 
         //binary search
         uint32_t n0 = entries[e0].begin;
