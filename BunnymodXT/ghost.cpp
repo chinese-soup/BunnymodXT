@@ -266,7 +266,7 @@ namespace Ghost
                     accumTime += frameTime;
                     offset += 36;
                     vec3 origin = READ<vec3>(data, offset);
-                    nodes.push_back({origin, accumTime + time});
+                    nodes.push_back({origin, accumTime});
                     
                     offset += 348;
                     uint32_t frameDataLength = READ<uint32_t>(data, offset);
