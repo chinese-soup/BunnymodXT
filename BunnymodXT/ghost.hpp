@@ -9,7 +9,8 @@
 
 namespace Ghost
 {
-    using namespace glm;
+    using glm::vec3;
+    using std::string;
     using std::vector;
 
     struct DemoHeader
@@ -53,6 +54,7 @@ namespace Ghost
         vector<GhostEntry> entries;
         vector<GhostNode> nodes;
 
+        void processBxtCommand(string, float&, GhostEntry&);
         bool process_demo(uint8_t*, float&);
         void set(const char*);
         uint32_t getInfo(float, const char*);

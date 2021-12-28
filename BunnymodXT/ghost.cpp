@@ -1,13 +1,9 @@
 #include "ghost.hpp"
-#include <iostream>
-#include <stdlib.h>
 
 namespace Ghost
 {
-    using std::string;
-
     template <typename T>
-    T READ(uint8_t *data, uint32_t &offset)
+    T READ(const uint8_t *data, uint32_t &offset)
     {
         T *ptr = (T*)&data[offset];
         offset += sizeof(T);
@@ -106,6 +102,118 @@ namespace Ghost
         return str;
     }
 
+    void Ghost::processBxtCommand(string str, float &accumTime, GhostEntry &entry)
+    {
+        uint32_t size = str.size();
+        const uint8_t *data = (const uint8_t*)str.data();
+
+        for(uint32_t pos = 4; pos < size; )
+        {
+            switch(data[pos++])
+            {
+                case 1: //version info
+                    {
+                        pos += 4;
+                        uint32_t vi_size = READ<uint32_t>(data, pos);
+                        pos += vi_size;
+                    }
+                    break;
+                case 2: //cvar values
+                    {
+                        uint32_t count = READ<uint32_t>(data, pos);
+                        for(uint32_t cv = 0; cv < count; cv++)
+                        {
+                            uint32_t cv_size = READ<uint32_t>(data, pos);
+                            pos += cv_size;
+                            uint32_t val_size = READ<uint32_t>(data, pos);
+                            pos += val_size;
+                        }
+                    }
+                    break;
+                case 3: //time
+                    {
+                        uint32_t hours = READ<uint32_t>(data, pos);
+                        uint8_t minutes = READ<uint8_t>(data, pos);
+                        uint8_t seconds = READ<uint8_t>(data, pos);
+                        double rem = READ<double>(data, pos);
+                        accumTime = hours*3600 + minutes*60 + seconds + rem;
+                    }
+                    break;
+                case 4: //bound cmd
+                    {
+                        uint32_t cmd_size = READ<uint32_t>(data, pos);
+                        pos += cmd_size;
+                    }
+                    break;
+                case 5: //alias expansion
+                    {
+                        uint32_t alias_size = READ<uint32_t>(data, pos);
+                        pos += alias_size;
+                        uint32_t cmd_size = READ<uint32_t>(data, pos);
+                        pos += cmd_size;
+                    }
+                    break;
+                case 6: //script exec
+                    {
+                        uint32_t name_size = READ<uint32_t>(data, pos);
+                        pos += name_size;
+                        uint32_t content_size = READ<uint32_t>(data, pos);
+                        pos += content_size;
+                    }
+                    break;
+                case 7: //cmd exec
+                    {
+                        uint32_t cmd_size = READ<uint32_t>(data, pos);
+                        
+                        if(0 == strncmp((const char*)&data[pos], "changelevel2 ", 13))
+                        {
+                            string newMap;
+                            for(uint32_t i = 13; data[pos+i] != ' '; i++)
+                                newMap.push_back(data[pos+i]);
+
+                            entry.end = nodes.size()-1;
+                            entries.push_back(entry);
+
+                            strcpy((char*)entry.mapName, newMap.c_str());
+                            entry.realTime = accumTime;
+                            entry.begin = nodes.size();   
+                        }
+
+                        pos += cmd_size;
+                    }
+                    break;
+                case 8: //game end
+                    {
+                    }
+                    break;
+                case 9: //loaded modules
+                    {
+                        uint32_t count = READ<uint32_t>(data, pos);
+                        for(uint32_t md = 0; md < count; md++)
+                        {
+                            uint32_t mod_size = READ<uint32_t>(data, pos);
+                            pos += mod_size;
+                        }
+                    }
+                    break;
+                case 10: //custom trigger cmd
+                    {
+                        pos += 24;
+                        uint32_t cmd_size = READ<uint32_t>(data, pos);
+                        pos += cmd_size;   
+                    }
+                    break;
+                case 11: //edicts
+                    {
+                        pos += 4;
+                    }
+                    break;
+                default:
+                    return;
+            }
+        }
+    }
+
     bool Ghost::process_demo(uint8_t *data, float &accumTime)
     {
         uint32_t offset = 0;
@@ -152,9 +260,11 @@ namespace Ghost
                 case 1:
                 {
                     offset += 4;
-                    vec3 position = READ<vec3>(data, offset);
-                    offset += 48;
-                    offset += 40;
+                    //vec3 position = READ<vec3>(data, offset);
+                    offset += 12*5;
+                    float frameTime = READ<float>(data, offset);
+                    accumTime += frameTime;
+                    offset += 36;
                     vec3 origin = READ<vec3>(data, offset);
                     nodes.push_back({origin, accumTime + time});
                     
@@ -168,24 +278,8 @@ namespace Ghost
                     {
                         offset -= 9;
                         string str = getBxtCommand(data, offset);
-                        if(str.size() != 0)
-                        {
-                            size_t f = str.find("changelevel2 ");
-                            if(f != std::string::npos)
-                            {
-                                entry.end = nodes.size()-1;
-                                entries.push_back(entry);
-
-                                for(int i = 0; i+f+13 < str.size(); i++)
-                                {
-                                    entry.mapName[i] = str[i+f+13];
-                                    if(str[i+f+13] == ' ') entry.mapName[i] = 0;
-                                }
-
-                                entry.realTime = accumTime+time;
-                                entry.begin = nodes.size();
-                            }
-                        }
+                        if(str.size() > 0) processBxtCommand(str, accumTime, entry);
+                        
                         else offset += 64+9;
                     }
                     break;
@@ -209,7 +303,6 @@ namespace Ghost
             }
         }
 
-        accumTime += time;
         if(nodes.size() == 0) return false;
         entry.end = nodes.size()-1;
         entries.push_back(entry);
