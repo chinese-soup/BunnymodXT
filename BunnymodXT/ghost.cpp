@@ -46,7 +46,6 @@ namespace Ghost
 
     string getBxtCommand(uint8_t *data, uint32_t &offset)
     {
-        const char HEADER[] = "//BXTD0";
         string str;
         bool escaping = false;
         int buf_pos = 0;
@@ -55,7 +54,7 @@ namespace Ghost
         while(true)
         {
             if(data[offset] != 3) return str;
-            for(int i = 0; i < 7; i++) if(HEADER[i] != data[offset+9+i]) return str;
+            if(strncmp((const char*)&data[offset+9], "//BXTD0", 7)) return str;
             offset += 9;
 
             for(int i = 7; i < 63; i++)
