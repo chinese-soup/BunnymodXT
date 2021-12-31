@@ -1002,6 +1002,8 @@ HOOK_DEF_2(ClientDLL, void, __cdecl, HUD_Redraw, float, time, int, intermission)
 	if (!CVars::bxt_disable_hud.GetBool())
 		ORIG_HUD_Redraw(time, intermission);
 
+	auto &hw = HwDLL::GetInstance();
+	//EngineDevMsg("demoplayback = %d", *hw.demoplayback);
 	CustomHud::Draw(time);
 }
 

@@ -200,6 +200,23 @@ extern "C" qboolean __cdecl BIsValveGame()
 	return true;
 }
 
+extern "C" qboolean __cdecl CL_ParseServerInfo()
+{
+	EngineDevMsg("CL_PARSEERVERINFO\n");
+	HwDLL::HOOKED_CL_ParseServerInfo();
+}
+
+extern "C" int __cdecl CRC_MapFile(CRC32_t *crcvalue, char *pszFileName)
+{
+	EngineDevMsg("CRC_MAPFILE HOOKED!\n");
+	HwDLL::HOOKED_CRC_MapFile(crcvalue, pszFileName);
+}
+
+/*extern "C" void __cdecl CL_ParseServerInfo()
+{
+	HwDLL::HOOKED_CL_ParseServerInfo();
+}*/
+
 extern "C" void __cdecl EmitWaterPolys(msurface_t *fa, int direction)
 {
 	return HwDLL::HOOKED_EmitWaterPolys(fa, direction);
@@ -561,6 +578,8 @@ void HwDLL::Clear()
 	ORIG_S_StartDynamicSound = nullptr;
 	ORIG_VGuiWrap2_NotifyOfServerConnect = nullptr;
 	ORIG_R_StudioSetupBones = nullptr;
+	ORIG_CL_ParseServerInfo = nullptr;
+	ORIG_CRC_MapFile = nullptr;
 	ORIG_MD5Init = nullptr;
 	ORIG_MD5Update = nullptr;
 	ORIG_MD5Final = nullptr;
@@ -718,6 +737,7 @@ void HwDLL::FindStuff()
 		if (cls) {
 			EngineDevMsg("[hw dll] Found cls at %p.\n", cls);
 			demorecording = reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(cls) + 0x405c);
+			demoplayback = reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(cls) + 0x4060);
 		} else
 			EngineDevWarning("[hw dll] Could not find cls.\n");
 
@@ -726,6 +746,10 @@ void HwDLL::FindStuff()
 			EngineDevMsg("[hw dll] Found sv at %p.\n", sv);
 			offTime = 0xc;
 			offWorldmodel = 296;
+			//worldmapCRC = sv + offWorldmodel + 4;
+			worldmapCRC = reinterpret_cast<CRC32_t*>(reinterpret_cast<uintptr_t>(sv) + 300);
+			modelname = reinterpret_cast<char*>(reinterpret_cast<uintptr_t>(sv) + offWorldmodel - 64);
+
 			offModels = 0x30948;
 			offNumEdicts = 0x3bc50;
 			offMaxEdicts = 0x3bc54;
@@ -737,6 +761,7 @@ void HwDLL::FindStuff()
 		if (svs) {
 			EngineDevMsg("[hw dll] Found svs at %p.\n", svs);
 			offEdict = 0x4a84;
+			maxclients = reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(svs) + 0x8);
 		} else
 			EngineDevWarning("[hw dll] Could not find svs.\n");
 
@@ -838,6 +863,24 @@ void HwDLL::FindStuff()
 		{
 			EngineDevWarning("[hw dll] Could not find R_StudioCalcAttachments.\n");
 			EngineWarning("[hw dll] Weapon special effects will be misplaced when using bxt_viewmodel_fov.\n");
+		}
+//*hw.demoplayback = 0;
+		ORIG_CL_ParseServerInfo = reinterpret_cast<_CL_ParseServerInfo>(MemUtils::GetSymbolAddress(m_Handle, "CL_ParseServerInfo"));
+		if (ORIG_CL_ParseServerInfo)
+			EngineDevMsg("[hw dll] Found ORIG_CL_ParseServerInfo at %p.\n", ORIG_CL_ParseServerInfo);
+		else
+		{
+			EngineDevWarning("[hw dll] Could not find ORIG_CL_ParseServerInfo.\n");
+			EngineWarning("´====== MRKDAov.\n");
+		}		
+		
+		ORIG_CRC_MapFile = reinterpret_cast<_CRC_MapFile>(MemUtils::GetSymbolAddress(m_Handle, "CRC_MapFile"));
+		if (ORIG_CRC_MapFile)
+			EngineDevMsg("[hw dll] Found ORIG_CRC_MapFile at %p.\n", ORIG_CRC_MapFile);
+		else
+		{
+			EngineDevWarning("[hw dll] Could not find ORIG_CRC_MapFile.\n");
+			EngineWarning("´====== MRKDAov.\n");
 		}
 
 		ORIG_VectorTransform = reinterpret_cast<_VectorTransform>(MemUtils::GetSymbolAddress(m_Handle, "VectorTransform"));
@@ -4946,6 +4989,10 @@ HOOK_DEF_3(HwDLL, int, __cdecl, SV_SpawnServer, int, bIsDemo, char*, server, cha
 			autoRecordDemoName.clear();
 		}
 	}
+	// Intiailize
+	*worldmapCRC = 0xffffffff;
+	auto crc = ORIG_CRC_MapFile(worldmapCRC, modelname);
+	EngineDevMsg("==== CRC CHECK IS = %lu", worldmapCRC);
 
 	if (insideHost_Reload_f && !autoRecordDemoName.empty())
 		autoRecordNow = true;
@@ -5427,4 +5474,23 @@ HOOK_DEF_0(HwDLL, int, __cdecl, BUsesSDLInput)
 		return true;
 	else
 		return ORIG_BUsesSDLInput();
+}
+
+HOOK_DEF_0(HwDLL, void, __cdecl, CL_ParseServerInfo)
+{
+	EngineDevMsg("AHOJ CHECK CRCS");
+	auto &hw = HwDLL::GetInstance();
+	ORIG_CL_ParseServerInfo();
+	*hw.demoplayback = 1;
+}
+
+typedef unsigned long CRC32_t;
+HOOK_DEF_2(HwDLL, int, __cdecl, CRC_MapFile, CRC32_t*, crcvalue, char*, pszFileName)
+{
+	insideMapCrcCheck = true;
+	auto &hw = HwDLL::GetInstance();
+	*hw.demoplayback = 0;
+	auto ret = ORIG_CRC_MapFile(crcvalue, pszFileName);
+	EngineDevMsg("============================ CRC for %s is %lu\n", pszFileName, crcvalue);
+	return ret;
 }

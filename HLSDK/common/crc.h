@@ -51,7 +51,7 @@ int MD5_Hash_File(unsigned char digest[16], char *pszFileName, int bUsefopen, in
 char *MD5_Print(unsigned char hash[16]);
 int MD5_Hash_CachedFile(unsigned char digest[16], unsigned char *pCache, int nFileSize, int bSeed, unsigned int seed[4]);
 
-int CRC_MapFile(CRC32_t *crcvalue, char *pszFileName);
+int CRC_MapFile2(CRC32_t *crcvalue, char *pszFileName);
 #ifdef __cplusplus
 }
 #endif

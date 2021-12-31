@@ -69,6 +69,8 @@ class HwDLL : public IHookableNameFilterOrdered
 	HOOK_DECL(void, __cdecl, R_DrawEntitiesOnList)
 	HOOK_DECL(void, __cdecl, R_DrawParticles)
 	HOOK_DECL(int, __cdecl, BUsesSDLInput)
+	HOOK_DECL(void, __cdecl, CL_ParseServerInfo)
+	HOOK_DECL(int, __cdecl, CRC_MapFile, CRC32_t *crcvalue, char *pszFileName)
 
 	struct cmdbuf_t
 	{
@@ -307,6 +309,8 @@ public:
 	float currentRenderFOV = 0;
 
 	bool insideCLEmitEntities = false;
+	bool insideMapCrcCheck = false;
+
 
 	void ResetStateBeforeTASPlayback();
 	void StartTASPlayback();
@@ -457,6 +461,7 @@ protected:
 	void *sv;
 	ptrdiff_t offTime;
 	ptrdiff_t offWorldmodel;
+	ptrdiff_t offWorldmap;
 	ptrdiff_t offModels;
 	ptrdiff_t offNumEdicts;
 	ptrdiff_t offMaxEdicts;
@@ -493,6 +498,10 @@ protected:
 
 public:
 	bool isOverridingCamera = false;
+	int *demoplayback;
+	CRC32_t *worldmapCRC;
+	char *modelname;
+	int *maxclients;
 	Vector cameraOverrideOrigin;
 	float cameraOverrideAngles[3];
 protected:
