@@ -200,7 +200,7 @@ extern "C" qboolean __cdecl BIsValveGame()
 	return true;
 }
 
-extern "C" qboolean __cdecl CL_ParseServerInfo()
+extern "C" void __cdecl CL_ParseServerInfo()
 {
 	EngineDevMsg("CL_PARSEERVERINFO\n");
 	HwDLL::HOOKED_CL_ParseServerInfo();
@@ -209,7 +209,7 @@ extern "C" qboolean __cdecl CL_ParseServerInfo()
 extern "C" int __cdecl CRC_MapFile(CRC32_t *crcvalue, char *pszFileName)
 {
 	EngineDevMsg("CRC_MAPFILE HOOKED!\n");
-	HwDLL::HOOKED_CRC_MapFile(crcvalue, pszFileName);
+	return HwDLL::HOOKED_CRC_MapFile(crcvalue, pszFileName);
 }
 
 /*extern "C" void __cdecl CL_ParseServerInfo()
@@ -738,6 +738,7 @@ void HwDLL::FindStuff()
 			EngineDevMsg("[hw dll] Found cls at %p.\n", cls);
 			demorecording = reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(cls) + 0x405c);
 			demoplayback = reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(cls) + 0x4060);
+			spectator = reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(cls) + 0x4060 + 804);
 		} else
 			EngineDevWarning("[hw dll] Could not find cls.\n");
 
@@ -3440,6 +3441,7 @@ void HwDLL::RegisterCVarsAndCommandsIfNeeded()
 	RegisterCVar(CVars::bxt_collision_depth_map_pixel_scale);
 	RegisterCVar(CVars::bxt_collision_depth_map_remove_distance_limit);
 	RegisterCVar(CVars::bxt_force_zmax);
+	RegisterCVar(CVars::bxt_force_demo_crc_check);
 	RegisterCVar(CVars::bxt_viewmodel_disable_idle);
 	RegisterCVar(CVars::bxt_viewmodel_disable_equip);
 	RegisterCVar(CVars::bxt_clear_green);
@@ -4992,7 +4994,7 @@ HOOK_DEF_3(HwDLL, int, __cdecl, SV_SpawnServer, int, bIsDemo, char*, server, cha
 	// Intiailize
 	*worldmapCRC = 0xffffffff;
 	auto crc = ORIG_CRC_MapFile(worldmapCRC, modelname);
-	EngineDevMsg("==== CRC CHECK IS = %lu", worldmapCRC);
+	EngineDevMsg("\n\n[SV_SpawnServer] ========= CRC CHECK FOR '%s' IS = %zu | %lu | %x", modelname, worldmapCRC, worldmapCRC, worldmapCRC);
 
 	if (insideHost_Reload_f && !autoRecordDemoName.empty())
 		autoRecordNow = true;
@@ -5480,17 +5482,38 @@ HOOK_DEF_0(HwDLL, void, __cdecl, CL_ParseServerInfo)
 {
 	EngineDevMsg("AHOJ CHECK CRCS");
 	auto &hw = HwDLL::GetInstance();
+	insideMapCrcCheck = true;
+
 	ORIG_CL_ParseServerInfo();
-	*hw.demoplayback = 1;
+
+	if(CVars::bxt_force_demo_crc_check.GetBool())
+	{
+		*hw.demoplayback = 0;
+		*hw.spectator = 1;;
+	}
+
+	insideMapCrcCheck = false;
+	//*hw.demoplayback = 1;
 }
 
 typedef unsigned long CRC32_t;
 HOOK_DEF_2(HwDLL, int, __cdecl, CRC_MapFile, CRC32_t*, crcvalue, char*, pszFileName)
 {
-	insideMapCrcCheck = true;
 	auto &hw = HwDLL::GetInstance();
-	*hw.demoplayback = 0;
+	//if(CVars::bxt_force_demo_crc_check.GetBool())
+	//*hw.demoplayback = 0;
+	//*crcvalue = 0xffffffff;
 	auto ret = ORIG_CRC_MapFile(crcvalue, pszFileName);
-	EngineDevMsg("============================ CRC for %s is %lu\n", pszFileName, crcvalue);
-	return ret;
+	//auto hashfile =MD5_Hash_File(CRC32_t, pszFileName, );
+
+	if(insideMapCrcCheck && CVars::bxt_force_demo_crc_check.GetBool())
+	{
+		//EngineDevMsg("========= [CRCMAPFILE] CRC CHECK IS = %lu", worldmapCRC);
+		EngineDevMsg("\n\n\n=============================== CRC for '%s' is %lu - '%lu'\n", pszFileName, crcvalue, worldmapCRC);
+		*hw.demoplayback = 1;
+		*hw.spectator = 1;
+
+	}
+	return ret; // TODO: SOUP
+	//return true;
 }

@@ -499,6 +499,7 @@ protected:
 public:
 	bool isOverridingCamera = false;
 	int *demoplayback;
+	int *spectator;
 	CRC32_t *worldmapCRC;
 	char *modelname;
 	int *maxclients;

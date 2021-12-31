@@ -15,7 +15,7 @@ namespace TEA
 		}                                                    /* end cycle */
 		data[0]=v0; data[1]=v1;
 	}
-
+//BXTD0}�����J����8��ޮ����J�[�23��hI�%�`
 	void decrypt(uint32_t data[2], const uint32_t key[4]) {
 		uint32_t v0=data[0], v1=data[1], sum=0xC6EF3720, i;  /* set up */
 		uint32_t delta=0x9e3779b9;                           /* a key schedule constant */

@@ -140,6 +140,7 @@ namespace CVars
 	extern CVarWrapper bxt_disable_vgui;
 	extern CVarWrapper bxt_show_only_viewmodel;
 	extern CVarWrapper bxt_force_zmax;
+	extern CVarWrapper bxt_force_demo_crc_check;
 	extern CVarWrapper bxt_viewmodel_fov;
 	extern CVarWrapper bxt_viewmodel_disable_idle;
 	extern CVarWrapper bxt_viewmodel_disable_equip;
