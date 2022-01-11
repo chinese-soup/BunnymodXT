@@ -10,7 +10,7 @@
 #include "HwDLL.hpp"
 #include "ClientDLL.hpp"
 #include "ServerDLL.hpp"
-#include "SDL.hpp"
+#include "SDLlol.hpp"
 #include "../patterns.hpp"
 #include "../cvars.hpp"
 #include "../hud_custom.hpp"
@@ -281,6 +281,50 @@ extern "C" void __cdecl R_DrawParticles()
 {
 	HwDLL::HOOKED_R_DrawParticles();
 }
+
+/*extern "C" HWND __cdecl GetMainWindow()
+{
+
+}*/
+//extern "C" void __cdecl _ZN13CSteam3Server8RunFrameEv()
+extern "C" void __fastcall _ZN13CSteam3Server24SendUpdatedServerDetailsEv(void* thisptr)
+{
+	EngineDevMsg("_ZN13CSteam3Server24SendUpdatedServerDetailsEv\n");
+	return; // bind kp_plus "+forward;cl_forwardspeed 4000;wait;wait;wait;wait;cl_forwardspeed -4000"
+}
+
+extern "C" int __fastcall _ZN13CSteam3Client22InitiateGameConnectionEPviyjtb(void *thisptr, void *pData,int cbMaxData,int steamID,int unIPServer, int usPortServer,bool bSecure)
+{
+	EngineDevMsg("_ZN13CSteam3Client22InitiateGameConnectionEPviyjtb\n");
+	return 0; // bind kp_plus "+forward;cl_forwardspeed 4000;wait;wait;wait;wait;cl_forwardspeed -4000"
+}
+
+
+extern "C" int __fastcall _ZN13CSteam3Client19TerminateConnectionEjt(void *thisptr,  int unIPServer,int usPortServere)
+{
+	EngineDevMsg("_ZN13CSteam3Client19TerminateConnectionEjt\n");
+	return 0; // bind kp_plus "+forward;cl_forwardspeed 4000;wait;wait;wait;wait;cl_forwardspeed -4000"
+}
+
+extern "C" void __fastcall _ZN13CSteam3Server19NotifyOfLevelChangeEb(void *thisptr, void*pLogonSuccess)
+{
+	EngineDevMsg("_ZN13CSteam3Server19NotifyOfLevelChangeEb\n");
+	return; // bind kp_plus "+forward;cl_forwardspeed 4000;wait;wait;wait;wait;cl_forwardspeed -4000"
+}
+
+/*extern "C" void __cdecl Steam_Activate()
+{
+	EngineDevMsg("LOL run frame\n");
+	//return; // bind kp_plus "+forward;cl_forwardspeed 4000;wait;wait;wait;wait;cl_forwardspeed -4000"
+}*/
+
+extern "C" void __cdecl _ZN13CSteam3Client10InitClientEv(void* thisptr)
+{
+	EngineDevMsg("_ZN13CSteam3Client10InitClientEv\n");
+	return; // bind kp_plus "+forward;cl_forwardspeed 4000;wait;wait;wait;wait;cl_forwardspeed -4000"
+}
+
+
 #endif
 
 void HwDLL::Hook(const std::wstring& moduleName, void* moduleHandle, void* moduleBase, size_t moduleLength, bool needToIntercept)
@@ -577,6 +621,7 @@ void HwDLL::Clear()
 	ORIG_R_DrawParticles = nullptr;
 	ORIG_BUsesSDLInput = nullptr;
 	ORIG_R_StudioRenderModel = nullptr;
+	ORIG_GetMainWindow = nullptr;
 
 	registeredVarsAndCmds = false;
 	autojump = false;
@@ -1076,6 +1121,14 @@ void HwDLL::FindStuff()
 			EngineDevWarning("[hw dll] Could not find R_StudioRenderModel.\n");
 			EngineWarning("Changing weapon viewmodel opacity is not available.\n");
 		}
+
+		ORIG_GetMainWindow = reinterpret_cast<_GetMainWindow>(MemUtils::GetSymbolAddress(m_Handle, "_Z13GetMainWindowv"));
+		if (ORIG_GetMainWindow) {
+			EngineDevMsg("[hw dll] Found GetMainWindow at %p.\n", ORIG_GetMainWindow);
+		} else {
+			EngineDevWarning("[hw dll] Could not find GetMainWindow.\n");
+		}
+
 	}
 	else
 	{
@@ -2835,7 +2888,7 @@ struct HwDLL::Cmd_Plus_BXT_TAS_Editor_Look_Around
 
 		if (hw.tas_editor_mode == TASEditorMode::EDIT) {
 			ClientDLL::GetInstance().SetMouseState(true);
-			SDL::GetInstance().SetRelativeMouseMode(true);
+			SDLlol::GetInstance().SetRelativeMouseMode(true);
 		}
 	}
 
@@ -2855,7 +2908,7 @@ struct HwDLL::Cmd_Minus_BXT_TAS_Editor_Look_Around
 
 		if (hw.tas_editor_mode == TASEditorMode::EDIT) {
 			ClientDLL::GetInstance().SetMouseState(false);
-			SDL::GetInstance().SetRelativeMouseMode(false);
+			SDLlol::GetInstance().SetRelativeMouseMode(false);
 		}
 	}
 
@@ -3299,10 +3352,10 @@ void HwDLL::SetTASEditorMode(TASEditorMode mode)
 
 	if (mode == TASEditorMode::EDIT) {
 		cl.SetMouseState(false);
-		SDL::GetInstance().SetRelativeMouseMode(false);
+		SDLlol::GetInstance().SetRelativeMouseMode(false);
 	} else {
 		cl.SetMouseState(true);
-		SDL::GetInstance().SetRelativeMouseMode(true);
+		SDLlol::GetInstance().SetRelativeMouseMode(true);
 	}
 
 	tas_editor_mode = mode;

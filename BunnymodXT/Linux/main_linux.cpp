@@ -98,7 +98,7 @@ static __attribute__((constructor(1337))) void Construct()
 	Hooks::AddToHookedModules(&HwDLL::GetInstance());
 	Hooks::AddToHookedModules(&ClientDLL::GetInstance());
 	Hooks::AddToHookedModules(&ServerDLL::GetInstance());
-	Hooks::AddToHookedModules(&SDL::GetInstance());
+	Hooks::AddToHookedModules(&SDLlol::GetInstance());
 	Hooks::Init(false);
 }
 

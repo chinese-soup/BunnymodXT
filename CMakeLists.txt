@@ -81,6 +81,9 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/BunnymodXT/git_revision.cpp.in" "${C
 find_package (Boost 1.57.0 REQUIRED)
 include_directories (SYSTEM ${Boost_INCLUDE_DIR})
 
+find_package(SDL2 REQUIRED)
+include_directories (SYSTEM ${SDL2_INCLUDE_DIRS})
+
 set (RapidJSON_ROOT "${CMAKE_SOURCE_DIR}/rapidjson")
 
 # hltas is already included as part of hlstrafe.
@@ -121,7 +124,12 @@ set (HEADER_FILES
 	BunnymodXT/modules/HwDLL.hpp
 	BunnymodXT/modules/ClientDLL.hpp
 	BunnymodXT/modules/ServerDLL.hpp
-	BunnymodXT/modules/SDL.hpp
+	#BunnymodXT/modules/SDL.hpp
+	BunnymodXT/modules/SDLlol.hpp
+	BunnymodXT/modules/imgui.h
+	BunnymodXT/modules/imgui_internal.h
+	BunnymodXT/modules/imgui_impl_opengl2.h
+	BunnymodXT/modules/imgui_impl_sdl.h
 	BunnymodXT/bunnymodxt.hpp
 	BunnymodXT/cmd_wrapper.hpp
 	BunnymodXT/custom_triggers.hpp
@@ -153,7 +161,15 @@ set (SOURCE_FILES
 	BunnymodXT/modules/HwDLL.cpp
 	BunnymodXT/modules/ClientDLL.cpp
 	BunnymodXT/modules/ServerDLL.cpp
-	BunnymodXT/modules/SDL.cpp
+	#BunnymodXT/modules/SDL.cpp
+	BunnymodXT/modules/SDLlol.cpp
+	BunnymodXT/modules/imgui_draw.cpp
+	BunnymodXT/modules/imgui_tables.cpp
+	BunnymodXT/modules/imgui_demo.cpp
+	BunnymodXT/modules/imgui_widgets.cpp
+	BunnymodXT/modules/imgui.cpp
+	BunnymodXT/modules/imgui_impl_opengl2.cpp
+	BunnymodXT/modules/imgui_impl_sdl.cpp
 	BunnymodXT/custom_triggers.cpp
 	BunnymodXT/cvars.cpp
 	BunnymodXT/hud_custom.cpp
@@ -171,7 +187,7 @@ if (MSVC)
 	include_directories ("SPTLib/Windows/minhook/include")
 	set (SOURCE_FILES ${SOURCE_FILES} ${WINDOWS_FILES} ${HEADER_FILES})
 else ()
-	set (SOURCE_FILES ${SOURCE_FILES} ${LINUX_FILES} ${HEADER_FILES})
+	set (SOURCE_FILES ${SOURCE_FILES} ${LINUX_FILES} ${HEADER_FILES} BunnymodXT/stb_image.h)
 endif ()
 
 add_library (BunnymodXT SHARED ${SOURCE_FILES})
@@ -197,7 +213,7 @@ if (NOT MSVC)
 	endif ()
 endif ()
 
-target_link_libraries (BunnymodXT hltas-cpp hlstrafe taslogger)
+target_link_libraries (BunnymodXT hltas-cpp hlstrafe taslogger ${SDL2_LIBRARIES})
 if (NOT MSVC)
 	target_link_libraries (BunnymodXT pthread rt GL)
 else()
