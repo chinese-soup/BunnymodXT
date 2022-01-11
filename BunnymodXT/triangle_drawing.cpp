@@ -499,7 +499,7 @@ namespace TriangleDrawing
 		auto& cl = ClientDLL::GetInstance();
 
 		int x, y;
-		auto mouse_state = SDL::GetInstance().GetMouseState(&x, &y);
+		auto mouse_state = SDLlol::GetInstance().GetMouseState(&x, &y);
 		Vector2D mouse(static_cast<float>(x), static_cast<float>(y));
 
 		// Convert from ScreenToWorld coordinates to SDL_GetMouseState coordinates.
@@ -1096,7 +1096,7 @@ namespace TriangleDrawing
 						hw.cameraOverrideOrigin[2] += 28;
 
 					ClientDLL::GetInstance().SetMouseState(true);
-					SDL::GetInstance().SetRelativeMouseMode(true);
+					SDLlol::GetInstance().SetRelativeMouseMode(true);
 				} else if (frame_bulk.AlgorithmParametersPresent && selection.initial_frame + 1 < player_datas.size()) {
 					Vector viewangles;
 					viewangles[1] = player_datas[selection.initial_frame + 1].Viewangles[1];
@@ -1120,7 +1120,7 @@ namespace TriangleDrawing
 						hw.cameraOverrideOrigin[2] += 28;
 
 					ClientDLL::GetInstance().SetMouseState(true);
-					SDL::GetInstance().SetRelativeMouseMode(true);
+					SDLlol::GetInstance().SetRelativeMouseMode(true);
 				} else {
 					// Can't adjust that.
 					selection.frame_bulk_index = 0;
@@ -1177,7 +1177,7 @@ namespace TriangleDrawing
 				other_frame_bulk_index = 0;
 
 				ClientDLL::GetInstance().SetMouseState(false);
-				SDL::GetInstance().SetRelativeMouseMode(false);
+				SDLlol::GetInstance().SetRelativeMouseMode(false);
 			}
 
 			// hover over single "target_yaw" and change type

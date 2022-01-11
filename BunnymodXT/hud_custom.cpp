@@ -9,12 +9,60 @@
 #include "opengl_utils.hpp"
 #include "splits.hpp"
 
+#include <SDL_video.h>
+#include "modules/imgui.h"
+#include "modules/imgui_impl_sdl.h"
+#include "modules/imgui_impl_opengl2.h"
 #include <GL/gl.h>
 
 #include "modules/HwDLL.hpp"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
+// Simple helper function to load an image into a OpenGL texture with common settings
+bool LoadTextureFromFile(const char* filename, GLuint* out_texture, int* out_width, int* out_height)
+{
+	// Load from file
+	int image_width = 0;
+	int image_height = 0;
+	unsigned char* image_data = stbi_load(filename, &image_width, &image_height, NULL, 4);
+	if (image_data == NULL)
+		return false;
+
+	// Create a OpenGL texture identifier
+	GLuint image_texture;
+	glGenTextures(1, &image_texture);
+	glBindTexture(GL_TEXTURE_2D, image_texture);
+
+	// Setup filtering parameters for display
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); // This is required on WebGL for non power-of-two textures
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); // Same
+
+	// Upload pixels into texture
+#if defined(GL_UNPACK_ROW_LENGTH) && !defined(__EMSCRIPTEN__)
+	glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+#endif
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image_width, image_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image_data);
+	stbi_image_free(image_data);
+
+	*out_texture = image_texture;
+	*out_width = image_width;
+	*out_height = image_height;
+
+	return true;
+}
+
+
 namespace CustomHud
 {
+
+	int my_image_width = 0;
+	int my_image_height = 0;
+	GLuint my_image_texture = 0;
+
 	static const float FADE_DURATION_JUMPSPEED = 0.7f;
 
 	static bool initialized = false;
@@ -1738,6 +1786,119 @@ namespace CustomHud
 		if (!CVars::bxt_hud.GetBool())
 			return;
 
+		SDL_Window* mrdat = static_cast<SDL_Window *>(HwDLL::GetInstance().ORIG_GetMainWindow());
+		//EngineDevMsg("MRDAT = %p %d \n", mrdat, mrdat);
+		int x = 0;
+		int y = 0;
+		auto currentContext = SDLlol::GetInstance().currentContext;
+		//EngineDevMsg("Context is %d | %p", currentContext, currentContext);
+
+		if(!SDLlol::GetInstance().started) {
+			ImGui::CreateContext();
+			ImGuiIO &io = ImGui::GetIO();
+			(void) io;
+			io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+			//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+			// Setup Dear ImGui style
+			//ImGui::StyleColorsDark();
+			ImGui::StyleColorsLight();
+
+			// Setup Platform/Renderer backends
+			ImGui_ImplSDL2_InitForOpenGL(mrdat, currentContext);
+			ImGui_ImplOpenGL2_Init();
+
+			bool ret = LoadTextureFromFile("/home/unko/playag.png", &my_image_texture, &my_image_width, &my_image_height);
+			//bool ret = LoadTextureFromFile("/home/unko/4dee83472ffd5a8ca24d26a050cf5454.gif", &my_image_texture, &my_image_width, &my_image_height);
+
+			SDLlol::GetInstance().started = true;
+		}
+		else
+		{
+			// Start the Dear ImGui frame
+			ImGui_ImplOpenGL2_NewFrame();
+			ImGui_ImplSDL2_NewFrame();
+			ImGui::NewFrame();
+			bool delete_last_point = true;
+			int fov = CVars::default_fov.GetInt();
+			auto &hw = HwDLL::GetInstance();
+			static bool show_window = false;
+
+			{
+				static float f = 0.0f;
+				static int counter = 0;
+
+				ImGuiWindowFlags window_flags = 0;
+				/*if (no_titlebar)        window_flags |= ImGuiWindowFlags_NoTitleBar;
+				if (no_scrollbar)       window_flags |= ImGuiWindowFlags_NoScrollbar;
+				if (!no_menu)           window_flags |= ImGuiWindowFlags_MenuBar;
+				if (no_move)            window_flags |= ImGuiWindowFlags_NoMove;
+				if (no_resize)          window_flags |= ImGuiWindowFlags_NoResize;
+				if (no_collapse)        window_flags |= ImGuiWindowFlags_NoCollapse;
+				if (no_nav)             window_flags |= ImGuiWindowFlags_NoNav;
+				if (no_background)      window_flags |= ImGuiWindowFlags_NoBackground;*/
+
+				window_flags |= ImGuiWindowFlags_NoBackground;
+
+				if(!ImGui::Begin("Hello, world!", &show_window, window_flags))
+				{
+					//ClientDLL::GetInstance().SetMouseState(true);
+					SDLlol::GetInstance().SetRelativeMouseMode(true);
+					ImGui::End();
+				}
+				else
+				{
+
+					///ClientDLL::GetInstance().SetMouseState(false);
+					SDLlol::GetInstance().SetRelativeMouseMode(false);
+					ImGui::ShowDemoWindow(&hw.show_demo_window);
+					// Create a window called "Hello, world!" and append into it.
+					ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
+					ImGui::Checkbox("Demo Window", &hw.show_demo_window);      // Edit bools storing our window open/close state
+					ImGui::Checkbox("Another Window", &hw.show_demo_window);
+					//ImGui::SetWindowSize(ImVec2(650, 650), 0);
+
+					ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+					ImGui::SliderInt("FOV", &fov, 0, 180);
+
+					ImGui::Image((void*)(intptr_t)my_image_texture, ImVec2(my_image_width, my_image_height));
+
+					if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+						counter++;
+
+					ImGui::SameLine();
+					ImGui::Text("counter = %d", counter);
+
+					ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+					ImGui::End();
+
+
+					/*ImGui::Begin("ALERT", &show_demo_window);                          // Create a window called "Hello, world!" and append into it.
+					ImGui::SetWindowSize(ImVec2(500, 800), 0);
+					ImGui::Text("The BXT systems have detected that you are not playing AG.\nPlease quit the game and go play AG instead.");
+
+					ImGui::Image((void*)(intptr_t)my_image_texture, ImVec2(my_image_width, my_image_height));
+					if(ImGui::Button("Ok, quit so I can play AG."))
+					{
+						ClientDLL::GetInstance().pEngfuncs->pfnClientCmd("quit");
+					}
+
+					ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+					ImGui::End();*/
+				}
+			}
+			if (fov != CVars::default_fov.GetInt())
+			{
+				char buffer[50];
+				sprintf(buffer, "default_fov %d\n", fov);
+				ClientDLL::GetInstance().pEngfuncs->pfnClientCmd(buffer);
+			}
+			ImGui::Render();
+			//glUseProgram(0); // You may want this if using this code in an OpenGL 3+ context where shaders may be bound
+			ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
+			//SDL_GL_SwapWindow(mrdat);
+		}
+
 		UpdatePrecision();
 		UpdateColors();
 		GetAccurateInfo();
@@ -1766,6 +1927,22 @@ namespace CustomHud
 		DrawCrosshair(flTime);
 		DrawStamina(flTime);
 		DrawSplit(flTime);
+
+		/*glBindTexture(GL_TEXTURE_2D, my_image_texture);
+
+		glBegin(GL_QUADS);
+		glTexCoord2f(0.0,0.0);
+		glVertex2f(0.0f,0.0);
+		glTexCoord2f(1.0,0.0);
+		glVertex2f(0.0 + 300.0,0.0);
+		glTexCoord2f(1.0,1.0);
+		glVertex2f(0.0 + 300.0,0.0 + 300.0);
+		glTexCoord2f(0.0f,1.0);
+		glVertex2f(0.0,0.0 + 300.0);
+		glEnd();
+
+
+		glFlush();*/
 
 		receivedAccurateInfo = false;
 		frame_bulk_selected = false;

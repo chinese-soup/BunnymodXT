@@ -13,6 +13,9 @@ enum class TASEditorMode {
 
 struct client_t;
 
+
+typedef void* HWND;
+
 class HwDLL : public IHookableNameFilterOrdered
 {
 	HOOK_DECL(void, __cdecl, LoadAndDecryptHwDLL, int a, void* b, void* c)
@@ -317,6 +320,7 @@ public:
 	bool tas_editor_unset_yaw;
 	bool tas_editor_unset_pitch;
 	bool tas_editor_apply_smoothing;
+	bool show_demo_window = false;
 	void SetTASEditorMode(TASEditorMode mode);
 	void SaveEditedInput();
 
@@ -360,6 +364,10 @@ public:
 	_Cmd_FindCmd ORIG_Cmd_FindCmd;
 	typedef void(__cdecl *_Con_Printf) (const char* fmt, ...);
 	_Con_Printf ORIG_Con_Printf;
+	typedef cl_entity_t*(__cdecl *_studioapi_GetCurrentEntity) ();
+	_studioapi_GetCurrentEntity ORIG_studioapi_GetCurrentEntity;
+	typedef HWND(__cdecl *_GetMainWindow)();
+	_GetMainWindow ORIG_GetMainWindow;
 	typedef cvar_t*(__cdecl *_Cvar_FindVar) (const char* name);
 	_Cvar_FindVar ORIG_Cvar_FindVar;
 	typedef int(__cdecl *_build_number)();

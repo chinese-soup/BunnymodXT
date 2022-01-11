@@ -10,7 +10,7 @@
 #include "HwDLL.hpp"
 #include "ClientDLL.hpp"
 #include "ServerDLL.hpp"
-#include "SDL.hpp"
+#include "SDLlol.hpp"
 #include "../patterns.hpp"
 #include "../cvars.hpp"
 #include "../hud_custom.hpp"
@@ -685,6 +685,7 @@ void HwDLL::Clear()
 	ppGlobals = nullptr;
 	pEngStudio = nullptr;
 	pEngineAPI = nullptr;
+	ORIG_GetMainWindow = nullptr;
 
 	registeredVarsAndCmds = false;
 	autojump = false;
@@ -1237,6 +1238,14 @@ void HwDLL::FindStuff()
 		} else {
 			EngineDevWarning("[hw dll] Could not find R_SetFrustum.\n");
 		}
+
+		ORIG_GetMainWindow = reinterpret_cast<_GetMainWindow>(MemUtils::GetSymbolAddress(m_Handle, "_Z13GetMainWindowv"));
+		if (ORIG_GetMainWindow) {
+			EngineDevMsg("[hw dll] Found GetMainWindow at %p.\n", ORIG_GetMainWindow);
+		} else {
+			EngineDevWarning("[hw dll] Could not find GetMainWindow.\n");
+		}
+
 	}
 	else
 	{
@@ -3447,7 +3456,7 @@ struct HwDLL::Cmd_Plus_BXT_TAS_Editor_Look_Around
 
 		if (hw.tas_editor_mode == TASEditorMode::EDIT) {
 			ClientDLL::GetInstance().SetMouseState(true);
-			SDL::GetInstance().SetRelativeMouseMode(true);
+			SDLlol::GetInstance().SetRelativeMouseMode(true);
 		}
 	}
 
@@ -3467,7 +3476,7 @@ struct HwDLL::Cmd_Minus_BXT_TAS_Editor_Look_Around
 
 		if (hw.tas_editor_mode == TASEditorMode::EDIT) {
 			ClientDLL::GetInstance().SetMouseState(false);
-			SDL::GetInstance().SetRelativeMouseMode(false);
+			SDLlol::GetInstance().SetRelativeMouseMode(false);
 		}
 	}
 
@@ -4486,10 +4495,10 @@ void HwDLL::SetTASEditorMode(TASEditorMode mode)
 
 	if (mode == TASEditorMode::EDIT) {
 		cl.SetMouseState(false);
-		SDL::GetInstance().SetRelativeMouseMode(false);
+		SDLlol::GetInstance().SetRelativeMouseMode(false);
 	} else {
 		cl.SetMouseState(true);
-		SDL::GetInstance().SetRelativeMouseMode(true);
+		SDLlol::GetInstance().SetRelativeMouseMode(true);
 	}
 
 	tas_editor_mode = mode;
