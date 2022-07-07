@@ -267,6 +267,11 @@ extern "C" void __cdecl CL_EmitEntities()
 {
 	HwDLL::HOOKED_CL_EmitEntities();
 }
+
+extern "C" void ClientDLL_CalcRefdef(ref_params_s *pparams)
+{
+	return HwDLL::HOOKED_ClientDLL_CalcRefdef(pparams);
+}
 #endif
 
 void HwDLL::Hook(const std::wstring& moduleName, void* moduleHandle, void* moduleBase, size_t moduleLength, bool needToIntercept)
@@ -807,6 +812,15 @@ void HwDLL::FindStuff()
 		else
 		{
 			EngineDevWarning("[hw dll] Could not find R_StudioCalcAttachments.\n");
+			EngineWarning("[hw dll] Weapon special effects will be misplaced when using bxt_viewmodel_fov.\n");
+		}
+
+		ORIG_ClientDLL_CalcRefdef = reinterpret_cast<_ClientDLL_CalcRefdef>(MemUtils::GetSymbolAddress(m_Handle, "ClientDLL_CalcRefdef"));
+		if (ORIG_ClientDLL_CalcRefdef)
+			EngineDevMsg("[hw dll] Found ClientDLL_CalcRefdef at %p.\n", ORIG_ClientDLL_CalcRefdef);
+		else
+		{
+			EngineDevWarning("[hw dll] Could not find ClientDLL_CalcRefdef.\n");
 			EngineWarning("[hw dll] Weapon special effects will be misplaced when using bxt_viewmodel_fov.\n");
 		}
 
@@ -5287,3 +5301,68 @@ HOOK_DEF_0(HwDLL, void, __cdecl, CL_EmitEntities)
 	ORIG_CL_EmitEntities();
 	insideCLEmitEntities = false;
 }
+
+HOOK_DEF_1(HwDLL, void, __cdecl, ClientDLL_CalcRefdef, ref_params_s*, pparams)
+{
+	//EngineDevMsg("Size = %d\n", Ghost::ghost.entries.size());
+	//EngineDevMsg("Map = %s\n", HwDLL::GetInstance().lastLoadedMap.c_str());
+	if(pparams->nextView == 0)
+	{
+		/*pparams->cl_viewangles[0] = currentAngles[0];
+		pparams->cl_viewangles[1] = currentAngles[1];
+		pparams->cl_viewangles[2] = currentAngles[2];*/
+		
+		pparams->viewport[0] = 0;
+		pparams->viewport[1] = 0;
+		pparams->viewport[2] = 1280;
+		pparams->viewport[3] = 720;
+
+		pparams->spectator = 0;
+		ORIG_ClientDLL_CalcRefdef(pparams);
+		pparams->nextView = 1;	// force one more view	
+
+		//EngineDevMsg("[SET] SETTING to = %d\n", pparams->nextView);
+		
+	}
+	else if (pparams->nextView == 1)
+	{
+		//EngineDevMsg("Size = %d\n", Ghost::ghost.entries.size());
+
+		pparams->spectator = 1;
+		if(!CVars::bxt_ghost.GetBool()) pparams->nextView = 0;
+		if(Ghost::ghost.entries.size() == 0)	pparams->nextView = 0;
+
+		Interprocess::Time it = CustomHud::GetTime();
+
+		float realTime = 3600 * it.hours + 60 * it.minutes + it.seconds + (float)it.milliseconds/1000;
+
+		uint32_t n0 = Ghost::ghost.getInfo(realTime, HwDLL::GetInstance().lastLoadedMap.c_str());
+
+		if(n0 == (uint32_t)-1) return;
+
+		glm::vec3 posv3 = Ghost::ghost.nodes[n0].position;
+		glm::vec3 anglesv3 = Ghost::ghost.nodes[n0].angles;
+		Vector origin = {posv3.x, posv3.y, posv3.z};
+		Vector angles = {anglesv3.x, anglesv3.y, anglesv3.z};
+		//EngineDevMsg("angles %f %f %f\n", angles[0], angles[1], angles[2]);
+		
+		pparams->vieworg[0] = origin.x + pparams->viewheight[0];
+		pparams->vieworg[1] = origin.y + pparams->viewheight[1];
+		pparams->vieworg[2] = origin.z + pparams->viewheight[2];
+		
+		pparams->viewangles[0] = angles.x;
+		pparams->viewangles[1] = angles.y;
+		pparams->viewangles[2] = angles.z;
+
+		pparams->viewport[0] = 0;
+		pparams->viewport[1] = 0;
+		pparams->viewport[2] = 640;
+		pparams->viewport[3] = 360;
+		//EngineDevMsg("[AFTER] SETTING to = %d\n", pparams->nextView);
+		ORIG_ClientDLL_CalcRefdef(pparams);
+		pparams->nextView = 0;
+
+	}
+	//EngineDevMsg("[AFTER] nextView is = %d\n", pparams->nextView);
+
+} 

@@ -354,7 +354,9 @@ namespace TriangleDrawing
 
 	static void DrawGhost(triangleapi_s *pTriAPI)
 	{
-		if(!CVars::bxt_ghost.GetBool()) return;
+		//EngineDevMsg("Size = %d\n", Ghost::ghost.entries.size());
+
+		/*if(!CVars::bxt_ghost.GetBool()) return;
 		if(Ghost::ghost.entries.size() == 0) return;
 		
 		Interprocess::Time it = CustomHud::GetTime();
@@ -366,14 +368,17 @@ namespace TriangleDrawing
 		if(n0 == (uint32_t)-1) return;
 
 		glm::vec3 posv3 = Ghost::ghost.nodes[n0].position;
+		glm::vec3 anglesv3 = Ghost::ghost.nodes[n0].angles;
 		Vector pos = {posv3.x, posv3.y, posv3.z};
+		Vector angles = {anglesv3.x, anglesv3.y, anglesv3.z};
+		EngineDevMsg("angles %f %f %f\n", angles[0], angles[1], angles[2]);
 
 		float s = 4;
 
 		pTriAPI->RenderMode(kRenderTransAdd);
 		pTriAPI->CullFace(TRI_NONE);
-		pTriAPI->Color4f(1, 1, 1, 1.0f);
-		TriangleUtils::DrawAACuboid(pTriAPI, {pos.x-s, pos.y-s, pos.z-s}, {pos.x+s, pos.y+s, pos.z+s});	
+		pTriAPI->Color4f(1, 1, 1, 1.0f);*/
+		//TriangleUtils::DrawAACuboid(pTriAPI, {pos.x-s, pos.y-s, pos.z-s}, {pos.x+s, pos.y+s, pos.z+s});	
 	}
 
 	static void DrawTASEditor(triangleapi_s *pTriAPI)

@@ -264,10 +264,33 @@ namespace Ghost
                     float frameTime = READ<float>(data, offset);
                     accumTime += frameTime;
                     offset += 36;
-                    vec3 origin = READ<vec3>(data, offset);
-                    nodes.push_back({origin, accumTime});
                     
-                    offset += 348;
+                    vec3 origin = READ<vec3>(data, offset);
+
+	                printf("Origin %f %f %f\n", origin.x, origin.y, origin.z);
+	                //printf("Angles = %f %f %f\n", angles.x, angles.y, angles.z);
+					
+	                float angle = READ<float>(data, offset);
+	                float angle2 = READ<float>(data, offset);
+	                float angle3 = READ<float>(data, offset);
+	                float angle4 = READ<float>(data, offset);
+	                // lol get rid of these ^
+	                
+	                
+	                
+	                /*float angle5 = READ<float>(data, offset);
+	                float angle6 = READ<float>(data, offset);
+	                float angle7 = READ<float>(data, offset);*/
+	                vec3 angles = READ<vec3>(data, offset);
+	                printf("Angles = %f %f %f\n", angles.x, angles.y, angles.z);
+	                //printf("angles %f %f %f\n", angle5, angle6, angle7);
+	                
+	                nodes.push_back({origin, angles, accumTime});
+	                
+	                //offset += 336;
+                    //offset += 312;
+	                offset += 320;
+	                //offset += 348;
                     uint32_t frameDataLength = READ<uint32_t>(data, offset);
                     offset += frameDataLength;
                 }
@@ -317,12 +340,14 @@ namespace Ghost
         for(int dem = 1; true; dem++)
         {
             char input_name[260];
-            sprintf(input_name, "%s_%d.dem", prefix, dem);
+            sprintf(input_name, "/home/unko/hl/valve/%s_%d.dem", prefix, dem);
+            //sprintf(input_name, "/home/unko/hl/valve/speedrun_1.dem");
             uint8_t *data = read_file(input_name);
             
             if(data == NULL) break; //end of demos
 
             process_demo(data, realTime);
+            break;
 
             if(data) delete[] data;
         }
@@ -334,22 +359,33 @@ namespace Ghost
         if(entries.size() < 1) return -1;
 
         //binary search
-        uint32_t e0 = 0;
-        uint32_t e1 = entries.size()-1;
-        while(e1 - e0 > 1)
+        uint32_t low = 0;
+        uint32_t high = entries.size()-1;
+        //printf("Entries size = %d | e0 = %d | e1 = %d\n", entries.size(), e0, e1);
+
+        while(high - low > 1)
         {
-            uint32_t mid = (e0+e1)/2;
+            uint32_t mid = (low + high) / 2;
             float midTime = entries[mid].realTime;
-            if(realTime < midTime) e1 = mid; else e0 = mid;
+            if(realTime <= midTime) 
+            	high = mid; 
+            else 
+            	low = mid;
+
+	        if(0 != strcmp(mapName, entries[low].mapName))
+	        {
+		        printf("Map name is not correct. LOw=%d | mapName = %s | entry mapname = %s\n", low, mapName, entries[low].mapName);
+		        continue;
+	        }
         }
 
-        if(0 != strcmp(mapName, entries[e0].mapName)) return -1;
-
+	    
         //binary search
-        uint32_t n0 = entries[e0].begin;
-        uint32_t n1 = entries[e0].end;
+        uint32_t n0 = entries[low].begin;
+        uint32_t n1 = entries[low].end;
         while(n1 - n0 > 1)
         {
+	        //printf("zase je to zacykleny2\n");
             uint32_t mid = (n0+n1)/2;
             float midTime = nodes[mid].realTime;
             if(realTime < midTime) n1 = mid; else n0 = mid;

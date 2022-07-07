@@ -46,6 +46,7 @@ namespace Ghost
     struct GhostNode
     {
         vec3 position;
+        vec3 angles;
         float realTime;
     };
 

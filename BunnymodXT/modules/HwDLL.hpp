@@ -65,6 +65,7 @@ class HwDLL : public IHookableNameFilterOrdered
 	HOOK_DECL(void, __fastcall, CBaseUI__HideGameUI, void *thisptr)
 	HOOK_DECL(void, __cdecl, CBaseUI__HideGameUI_Linux, void *thisptr)
 	HOOK_DECL(void, __cdecl, CL_EmitEntities)
+	HOOK_DECL(void, __cdecl, ClientDLL_CalcRefdef, ref_params_s *pparams)
 
 	struct cmdbuf_t
 	{
@@ -301,6 +302,7 @@ public:
 	void FreeCamTick();
 
 	float currentRenderFOV = 0;
+	float currentAngles[3];
 
 	bool insideCLEmitEntities;
 
