@@ -9,6 +9,10 @@ namespace ConUtils
 
 	void Init()
 	{
+		auto debugConsoleEnabled = std::getenv("BXT_DISABLE_DEBUG_CONSOLE");
+		if(debugConsoleEnabled)
+			return;
+		
 		AllocConsole();
 
 		hConsoleOutput = GetStdHandle(STD_OUTPUT_HANDLE);
