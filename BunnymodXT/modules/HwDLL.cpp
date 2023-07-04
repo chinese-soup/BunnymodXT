@@ -6965,7 +6965,7 @@ HOOK_DEF_0(HwDLL, void, __cdecl, Host_Shutdown)
 {
 	ORIG_Host_Shutdown();
 	Unhook();
-	SDL::GetInstance().Unhook();
+	SDLlol::GetInstance().Unhook();
 }
 
 HOOK_DEF_0(HwDLL, void, __cdecl, ReleaseEntityDlls)

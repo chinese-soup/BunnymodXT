@@ -14,7 +14,7 @@ extern "C" int __cdecl SDL_WaitEventTimeout(void *event, int time)
 /*extern "C" void __cdecl SDL_CreateWindow(const char *title, int x, int y, int w, int h, u_int32 flags)
 {
 	return SDLlol::HOOKED_SDL_CreateWindow(title, x, y, w, h, flags);
-}*/
+}
 /*extern "C" void __cdecl SDL_GetWindowSize(void *window, int*w, int*h)
 {
 	return SDLlol::HOOKED_SDL_GetWindowSize(window, w, h);
@@ -23,6 +23,11 @@ extern "C" int __cdecl SDL_WaitEventTimeout(void *event, int time)
 {
 	return SDLlol::HOOKED_SDL_GL_CreateContext(window);
 }*/
+
+extern "C" void* SDL_ShowWindow() 
+{
+	
+}
 
 #endif
 
@@ -36,6 +41,13 @@ void SDLlol::Hook(const std::wstring& moduleName, void* moduleHandle, void* modu
 	m_Length = moduleLength;
 	m_Name = moduleName;
 	m_Intercepted = needToIntercept;
+
+	ORIG_SDL_SetRelativeMouseMode = reinterpret_cast<_SDL_SetRelativeMouseMode>(MemUtils::GetSymbolAddress(m_Handle, "SDL_SetRelativeMouseMode"));
+	if (ORIG_SDL_SetRelativeMouseMode) {
+		EngineDevMsg("[sdl] Found SDL_SetRelativeMouseMode at %p.\n", ORIG_SDL_SetRelativeMouseMode);
+	} else {
+		EngineDevWarning("[sdl] Could not find SDL_SetRelativeMouseMode.\n");
+	}
 
 	ORIG_SDL_SetRelativeMouseMode = reinterpret_cast<_SDL_SetRelativeMouseMode>(MemUtils::GetSymbolAddress(m_Handle, "SDL_SetRelativeMouseMode"));
 	if (ORIG_SDL_SetRelativeMouseMode) {
@@ -142,7 +154,7 @@ HOOK_DEF_3(SDLlol, void, __cdecl, SDL_GetWindowSize, void*, window, int*, w, int
 	//EngineDevMsg("LOL %d %d\n", w, h);
 	//*w = 1280;
 	//*h = 720;
-
+	
 	ORIG_SDL_GetWindowSize(window, w, h);
 
 }
